@@ -37,6 +37,9 @@
 		"itemUrl": "https://marketplace.visualstudio.com/items"
 	},
 	"builtInExtensions": [],
+	"napApiUrl": "https://nap-ide.com",
+	"napAuthCallback": "/electron-auth-success",
+	"napUpdateEndpoint": "/api/updates/latest",
 	"linkProtectionTrustedDomains": [
 		"https://voideditor.com",
 		"https://voideditor.dev",

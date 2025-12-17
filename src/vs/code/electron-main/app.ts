@@ -133,6 +133,15 @@ import { LLMMessageChannel } from '../../workbench/contrib/void/electron-main/se
 import { VoidSCMService } from '../../workbench/contrib/void/electron-main/voidSCMMainService.js';
 import { IVoidSCMService } from '../../workbench/contrib/void/common/voidSCMTypes.js';
 import { MCPChannel } from '../../workbench/contrib/void/electron-main/mcpChannel.js';
+// NAP Integration Services
+import { INapAuthService } from '../../workbench/contrib/void/common/napAuthService.js';
+import { NapAuthMainService } from '../../workbench/contrib/void/electron-main/napAuthMainService.js';
+import { INapLicenseService } from '../../workbench/contrib/void/common/napLicenseService.js';
+import { NapLicenseMainService } from '../../workbench/contrib/void/electron-main/napLicenseMainService.js';
+import { INapUsageService } from '../../workbench/contrib/void/common/napUsageService.js';
+import { NapUsageMainService } from '../../workbench/contrib/void/electron-main/napUsageMainService.js';
+import { INapSubscriptionService } from '../../workbench/contrib/void/common/napSubscriptionService.js';
+import { NapSubscriptionMainService } from '../../workbench/contrib/void/electron-main/napSubscriptionMainService.js';
 /**
  * The main VS Code application. There will only ever be one instance,
  * even if the user starts many instances (e.g. from the command line).
@@ -1106,6 +1115,12 @@ export class CodeApplication extends Disposable {
 		services.set(IVoidUpdateService, new SyncDescriptor(VoidMainUpdateService, undefined, false));
 		services.set(IVoidSCMService, new SyncDescriptor(VoidSCMService, undefined, false));
 
+		// NAP Integration Services (Auth must be first as others depend on it)
+		services.set(INapAuthService, new SyncDescriptor(NapAuthMainService, undefined, false));
+		services.set(INapLicenseService, new SyncDescriptor(NapLicenseMainService, undefined, false));
+		services.set(INapUsageService, new SyncDescriptor(NapUsageMainService, undefined, false));
+		services.set(INapSubscriptionService, new SyncDescriptor(NapSubscriptionMainService, undefined, false));
+
 		// Default Extensions Profile Init
 		services.set(IExtensionsProfileScannerService, new SyncDescriptor(ExtensionsProfileScannerService, undefined, true));
 		services.set(IExtensionsScannerService, new SyncDescriptor(ExtensionsScannerService, undefined, true));
@@ -1253,6 +1268,19 @@ export class CodeApplication extends Disposable {
 		// Void added this
 		const mcpChannel = new MCPChannel();
 		mainProcessElectronServer.registerChannel('void-channel-mcp', mcpChannel);
+
+		// NAP Integration Channels
+		const napAuthChannel = ProxyChannel.fromService(accessor.get(INapAuthService), disposables);
+		mainProcessElectronServer.registerChannel('void-channel-nap-auth', napAuthChannel);
+
+		const napLicenseChannel = ProxyChannel.fromService(accessor.get(INapLicenseService), disposables);
+		mainProcessElectronServer.registerChannel('void-channel-nap-license', napLicenseChannel);
+
+		const napUsageChannel = ProxyChannel.fromService(accessor.get(INapUsageService), disposables);
+		mainProcessElectronServer.registerChannel('void-channel-nap-usage', napUsageChannel);
+
+		const napSubscriptionChannel = ProxyChannel.fromService(accessor.get(INapSubscriptionService), disposables);
+		mainProcessElectronServer.registerChannel('void-channel-nap-subscription', napSubscriptionChannel);
 
 		// Extension Host Debug Broadcasting
 		const electronExtensionHostDebugBroadcastChannel = new ElectronExtensionHostDebugBroadcastChannel(accessor.get(IWindowsMainService));
