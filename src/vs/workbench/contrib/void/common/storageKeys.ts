@@ -21,3 +21,10 @@ export const THREAD_STORAGE_KEY = 'void.chatThreadStorageII'
 
 
 export const OPT_OUT_KEY = 'void.app.optOutAll'
+
+// NAP integration storage keys
+export const NAP_AUTH_STORAGE_KEY = 'nap.authState'
+export const NAP_LICENSE_STORAGE_KEY = 'nap.licenseState'
+export const NAP_SUBSCRIPTION_STORAGE_KEY = 'nap.subscriptionState'
+export const NAP_USAGE_CACHE_KEY = 'nap.usageCache'
+export const NAP_DEVICE_ID_KEY = 'nap.deviceId'

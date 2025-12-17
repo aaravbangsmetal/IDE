@@ -4,11 +4,12 @@
  *--------------------------------------------------------------------------------------*/
 
 import { Disposable } from '../../../../base/common/lifecycle.js';
+import { isMacintosh, isWindows } from '../../../../base/common/platform.js';
 import { IEnvironmentMainService } from '../../../../platform/environment/electron-main/environmentMainService.js';
 import { IProductService } from '../../../../platform/product/common/productService.js';
 import { IUpdateService, StateType } from '../../../../platform/update/common/update.js';
 import { IVoidUpdateService } from '../common/voidUpdateService.js';
-import { VoidCheckUpdateRespose } from '../common/voidUpdateServiceTypes.js';
+import { VoidCheckUpdateRespose, NapUpdateResponse } from '../common/voidUpdateServiceTypes.js';
 
 
 
@@ -23,6 +24,22 @@ export class VoidMainUpdateService extends Disposable implements IVoidUpdateServ
 		super()
 	}
 
+	/**
+	 * Get NAP API URL from product config
+	 */
+	private get _napApiUrl(): string {
+		return (this._productService as any).napApiUrl || '';
+	}
+
+	/**
+	 * Get current platform identifier
+	 */
+	private get _platform(): string {
+		if (isMacintosh) return 'darwin';
+		if (isWindows) return 'win32';
+		return 'linux';
+	}
+
 
 	async check(explicit: boolean): Promise<VoidCheckUpdateRespose> {
 
@@ -30,6 +47,12 @@ export class VoidMainUpdateService extends Disposable implements IVoidUpdateServ
 
 		if (isDevMode) {
 			return { message: null } as const
+		}
+
+		// Try NAP update API first
+		const napResult = await this._checkNapUpdates(explicit);
+		if (napResult) {
+			return napResult;
 		}
 
 		// if disabled and not explicitly checking, return early
@@ -88,8 +111,57 @@ export class VoidMainUpdateService extends Disposable implements IVoidUpdateServ
 		return null
 	}
 
+	/**
+	 * Check for updates using NAP's update API
+	 */
+	private async _checkNapUpdates(explicit: boolean): Promise<VoidCheckUpdateRespose> {
+		if (!this._napApiUrl) {
+			return null; // NAP not configured, fall through to default
+		}
 
+		try {
+			const currentVersion = (this._productService as any).voidVersion || this._productService.version;
+			const url = `${this._napApiUrl}/api/updates/latest?platform=${this._platform}&current_version=${currentVersion}`;
 
+			console.log('[VoidMainUpdateService] Checking NAP updates:', url);
+			const response = await fetch(url);
+
+			// 204 No Content means no update available
+			if (response.status === 204) {
+				return explicit ? { message: 'NAP-IDE is up-to-date!' } : null;
+			}
+
+			if (!response.ok) {
+				console.warn('[VoidMainUpdateService] NAP update check failed:', response.status);
+				return null; // Fall through to default update mechanism
+			}
+
+			const data: NapUpdateResponse = await response.json();
+
+			// Compare versions
+			if (data.version === currentVersion) {
+				return explicit ? { message: 'NAP-IDE is up-to-date!' } : null;
+			}
+
+			// Update available
+			let message = `A new version (${data.version}) is available!`;
+			if (data.mandatory) {
+				message = `A mandatory update (${data.version}) is required!`;
+			}
+			if (data.notes) {
+				message += ` ${data.notes}`;
+			}
+
+			return {
+				message,
+				action: 'download'
+			} as const;
+
+		} catch (error) {
+			console.error('[VoidMainUpdateService] NAP update check error:', error);
+			return null; // Fall through to default
+		}
+	}
 
 
 

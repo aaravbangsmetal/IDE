@@ -11,4 +11,13 @@ export type VoidCheckUpdateRespose = {
 	actions?: undefined,
 } | null
 
-
+/**
+ * Response from NAP update API
+ */
+export interface NapUpdateResponse {
+	version: string;
+	url: string;
+	notes?: string;
+	pub_date?: string;
+	mandatory?: boolean;
+}
