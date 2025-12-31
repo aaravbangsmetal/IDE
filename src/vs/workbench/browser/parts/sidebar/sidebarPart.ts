@@ -20,7 +20,7 @@ import { AnchorAlignment } from '../../../../base/browser/ui/contextview/context
 import { IExtensionService } from '../../../services/extensions/common/extensions.js';
 import { LayoutPriority } from '../../../../base/browser/ui/grid/grid.js';
 import { assertIsDefined } from '../../../../base/common/types.js';
-import { IViewDescriptorService } from '../../../common/views.js';
+import { IViewDescriptorService, ViewContainerLocation } from '../../../common/views.js';
 import { AbstractPaneCompositePart, CompositeBarPosition } from '../paneCompositePart.js';
 import { ActivityBarCompositeBar, ActivitybarPart } from '../activitybar/activitybarPart.js';
 import { ActionsOrientation } from '../../../../base/browser/ui/actionbar/actionbar.js';
@@ -105,20 +105,119 @@ export class SidebarPart extends AbstractPaneCompositePart {
 			menuService,
 		);
 
+		// Force activity bar to TOP position for horizontal toolbar
+		this.configurationService.updateValue(LayoutSettings.ACTIVITY_BAR_LOCATION, ActivityBarPosition.TOP);
+
 		this.rememberActivityBarVisiblePosition();
 		this._register(configurationService.onDidChangeConfiguration(e => {
 			if (e.affectsConfiguration(LayoutSettings.ACTIVITY_BAR_LOCATION)) {
+				// Prevent changing from TOP position
+				const currentPosition = this.configurationService.getValue<ActivityBarPosition>(LayoutSettings.ACTIVITY_BAR_LOCATION);
+				if (currentPosition !== ActivityBarPosition.TOP) {
+					this.configurationService.updateValue(LayoutSettings.ACTIVITY_BAR_LOCATION, ActivityBarPosition.TOP);
+				}
 				this.onDidChangeActivityBarLocation();
 			}
 		}));
 
+		// Filter pins after extensions are registered
+		extensionService.whenInstalledExtensionsRegistered().then(() => {
+			this.filterPinnedViewContainers(viewDescriptorService);
+		});
+
+		// Also filter when view containers change
+		this._register(viewDescriptorService.onDidChangeViewContainers(() => {
+			setTimeout(() => this.filterPinnedViewContainers(viewDescriptorService), 100);
+		}));
+
 		this.registerActions();
+	}
+
+	private filterPinnedViewContainers(viewDescriptorService: IViewDescriptorService): void {
+		if (!this.shouldShowCompositeBar()) {
+			return;
+		}
+
+		// Access the paneCompositeBar through the updateCompositeBar method's result
+		// We need to wait for it to be created
+		setTimeout(() => {
+			const paneCompositeBar = (this as any).paneCompositeBar?.value;
+			if (!paneCompositeBar) {
+				return;
+			}
+
+			const mainViewContainers = ['workbench.view.explorer', 'workbench.view.search', 'workbench.view.scm', 'workbench.view.extensions'];
+			const location = ViewContainerLocation.Sidebar;
+			const allViewContainers = viewDescriptorService.getViewContainersByLocation(location);
+
+			// Access the internal composite bar to unpin items
+			const internalCompositeBar = (paneCompositeBar as any).compositeBar;
+
+			if (internalCompositeBar) {
+				// Override getOverflowingComposites to include all visible items, not just pinned ones
+				const originalGetOverflowingComposites = (internalCompositeBar as any).getOverflowingComposites;
+				if (originalGetOverflowingComposites && !(internalCompositeBar as any)._overflowOverridden) {
+					(internalCompositeBar as any).getOverflowingComposites = function () {
+						const model = (this as any).model;
+						const visibleComposites = (this as any).visibleComposites || [];
+
+						// Get all visible items that aren't in the visible composites (main 4)
+						const allVisibleIds = model.visibleItems.map((item: any) => item.id);
+						const overflowingIds = allVisibleIds.filter((id: string) => !visibleComposites.includes(id));
+
+						// Also include active item if it's not already included
+						if (model.activeItem && !overflowingIds.includes(model.activeItem.id) && !visibleComposites.includes(model.activeItem.id)) {
+							overflowingIds.push(model.activeItem.id);
+						}
+
+						return model.visibleItems
+							.filter((c: any) => overflowingIds.includes(c.id))
+							.map((item: any) => {
+								const action = (this as any).getAction(item.id);
+								return { id: item.id, name: action?.label || item.name };
+							});
+					};
+					(internalCompositeBar as any)._overflowOverridden = true;
+				}
+
+				for (const container of allViewContainers) {
+					if (!mainViewContainers.includes(container.id)) {
+						// Unpin items that aren't in the main 4 - they'll go to overflow
+						if (internalCompositeBar.isPinned(container.id)) {
+							internalCompositeBar.unpin(container.id);
+						}
+					} else {
+						// Ensure main items are pinned
+						if (!internalCompositeBar.isPinned(container.id)) {
+							internalCompositeBar.pin(container.id);
+						}
+					}
+				}
+
+				// Force update to ensure overflow shows when there are more than 4 items
+				const updateMethod = (internalCompositeBar as any).updateCompositeSwitcher;
+				if (updateMethod) {
+					// Trigger update - this will create overflow if needed
+					setTimeout(() => {
+						updateMethod.call(internalCompositeBar);
+					}, 100);
+				}
+			}
+		}, 200);
 	}
 
 	private onDidChangeActivityBarLocation(): void {
 		this.activityBarPart.hide();
 
 		this.updateCompositeBar();
+
+		// Filter pins after composite bar is updated
+		setTimeout(() => {
+			const viewDescriptorService = (this as any).viewDescriptorService as IViewDescriptorService;
+			if (viewDescriptorService) {
+				this.filterPinnedViewContainers(viewDescriptorService);
+			}
+		}, 300);
 
 		const id = this.getActiveComposite()?.getId();
 		if (id) {
@@ -163,6 +262,20 @@ export class SidebarPart extends AbstractPaneCompositePart {
 		return this.layoutService.getSideBarPosition() === SideBarPosition.LEFT ? AnchorAlignment.LEFT : AnchorAlignment.RIGHT;
 	}
 
+	protected override updateCompositeBar(updateCompositeBarOption: boolean = false): void {
+		super.updateCompositeBar(updateCompositeBarOption);
+
+		// Filter pins after composite bar is created/updated
+		if (this.shouldShowCompositeBar()) {
+			setTimeout(() => {
+				const viewDescriptorService = (this as any).viewDescriptorService as IViewDescriptorService;
+				if (viewDescriptorService) {
+					this.filterPinnedViewContainers(viewDescriptorService);
+				}
+			}, 100);
+		}
+	}
+
 	protected override createCompositeBar(): ActivityBarCompositeBar {
 		return this.instantiationService.createInstance(ActivityBarCompositeBar, this.getCompositeBarOptions(), this.partId, this, false);
 	}
@@ -173,7 +286,7 @@ export class SidebarPart extends AbstractPaneCompositePart {
 			pinnedViewContainersKey: ActivitybarPart.pinnedViewContainersKey,
 			placeholderViewContainersKey: ActivitybarPart.placeholderViewContainersKey,
 			viewContainersWorkspaceStateKey: ActivitybarPart.viewContainersWorkspaceStateKey,
-			icon: true,
+			icon: true, // Show only icons, no labels
 			orientation: ActionsOrientation.HORIZONTAL,
 			recomputeSizes: true,
 			activityHoverOptions: {
@@ -189,8 +302,8 @@ export class SidebarPart extends AbstractPaneCompositePart {
 				}
 			},
 			compositeSize: 0,
-			iconSize: 16,
-			overflowActionSize: 30,
+			iconSize: 13, // Reduced by 20% from 16px
+			overflowActionSize: 30, // Size for overflow dropdown button
 			colors: theme => ({
 				activeBackgroundColor: theme.getColor(SIDE_BAR_BACKGROUND),
 				inactiveBackgroundColor: theme.getColor(SIDE_BAR_BACKGROUND),
@@ -206,8 +319,8 @@ export class SidebarPart extends AbstractPaneCompositePart {
 	}
 
 	protected shouldShowCompositeBar(): boolean {
-		const activityBarPosition = this.configurationService.getValue<ActivityBarPosition>(LayoutSettings.ACTIVITY_BAR_LOCATION);
-		return activityBarPosition === ActivityBarPosition.TOP || activityBarPosition === ActivityBarPosition.BOTTOM;
+		// Always show composite bar at top for horizontal toolbar
+		return true;
 	}
 
 	private shouldShowActivityBar(): boolean {
@@ -219,14 +332,8 @@ export class SidebarPart extends AbstractPaneCompositePart {
 	}
 
 	protected getCompositeBarPosition(): CompositeBarPosition {
-		const activityBarPosition = this.configurationService.getValue<ActivityBarPosition>(LayoutSettings.ACTIVITY_BAR_LOCATION);
-		switch (activityBarPosition) {
-			case ActivityBarPosition.TOP: return CompositeBarPosition.TOP;
-			case ActivityBarPosition.BOTTOM: return CompositeBarPosition.BOTTOM;
-			case ActivityBarPosition.HIDDEN:
-			case ActivityBarPosition.DEFAULT: // noop
-			default: return CompositeBarPosition.TITLE;
-		}
+		// Always return TOP to show horizontal toolbar at the top
+		return CompositeBarPosition.TOP;
 	}
 
 	private rememberActivityBarVisiblePosition(): void {
@@ -246,11 +353,37 @@ export class SidebarPart extends AbstractPaneCompositePart {
 	}
 
 	override getPinnedPaneCompositeIds(): string[] {
-		return this.shouldShowCompositeBar() ? super.getPinnedPaneCompositeIds() : this.activityBarPart.getPinnedPaneCompositeIds();
+		if (!this.shouldShowCompositeBar()) {
+			return this.activityBarPart.getPinnedPaneCompositeIds();
+		}
+
+		// Filter to only return the 4 main items: Explorer, Search, Source Control, Extensions
+		const mainViewContainers = ['workbench.view.explorer', 'workbench.view.search', 'workbench.view.scm', 'workbench.view.extensions'];
+		const allPinned = super.getPinnedPaneCompositeIds();
+		return allPinned.filter(id => mainViewContainers.includes(id));
 	}
 
 	override getVisiblePaneCompositeIds(): string[] {
-		return this.shouldShowCompositeBar() ? super.getVisiblePaneCompositeIds() : this.activityBarPart.getVisiblePaneCompositeIds();
+		if (!this.shouldShowCompositeBar()) {
+			return this.activityBarPart.getVisiblePaneCompositeIds();
+		}
+
+		// Filter to only show the 4 main items in the horizontal bar: Explorer, Search, Source Control, Extensions
+		// Other items will be accessible via the dropdown overflow menu
+		const mainViewContainers = ['workbench.view.explorer', 'workbench.view.search', 'workbench.view.scm', 'workbench.view.extensions'];
+		const allVisible = super.getVisiblePaneCompositeIds();
+
+		// Always include the active composite if it's not one of the main 4
+		const activeComposite = this.getActivePaneComposite();
+		const activeId = activeComposite?.getId();
+
+		// Filter to main 4, but always include active if it exists
+		const filtered = allVisible.filter(id => mainViewContainers.includes(id));
+		if (activeId && !mainViewContainers.includes(activeId) && !filtered.includes(activeId)) {
+			// Don't add active to filtered - it will show via overflow when active
+		}
+
+		return filtered;
 	}
 
 	override getPaneCompositeIds(): string[] {
