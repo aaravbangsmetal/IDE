@@ -27,7 +27,7 @@ import { KeybindingWeight } from '../../../../platform/keybinding/common/keybind
 import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
 import { activeContrastBorder, asCssVariable } from '../../../../platform/theme/common/colorRegistry.js';
-import { IThemeService, Themable } from '../../../../platform/theme/common/themeService.js';
+import { IThemeService, Themable, registerThemingParticipant } from '../../../../platform/theme/common/themeService.js';
 import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
 import { CompositeMenuActions } from '../../actions.js';
 import { CompositeDragAndDropObserver, toggleDropEffect } from '../../dnd.js';
@@ -1320,5 +1320,18 @@ registerAction2(class MoveViews extends Action2 {
 		}
 
 		await accessor.get(IViewsService).openViewContainer(destination.id, true);
+	}
+});
+
+// Theme the twisty icons in pane headers (section headers like OUTLINE, TIMELINE, etc.)
+// but NOT the tree twisties for folders/files
+registerThemingParticipant((theme, collector) => {
+	const sectionHeaderForeground = theme.getColor(SIDE_BAR_SECTION_HEADER_FOREGROUND);
+	if (sectionHeaderForeground) {
+		collector.addRule(`
+			.monaco-pane-view .pane > .pane-header .twisty-container {
+				color: ${sectionHeaderForeground} !important;
+			}
+		`);
 	}
 });

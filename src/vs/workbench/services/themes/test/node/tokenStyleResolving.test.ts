@@ -114,7 +114,7 @@ suite('Themes - TokenStyleResolving', () => {
 			'type': ts('#333333', { bold: false, underline: true, italic: false }),
 			'function': ts('#333333', unsetStyle),
 			'string': ts('#444444', undefinedStyle),
-			'number': ts('#555555', undefinedStyle),
+			'number': ts('#606060', undefinedStyle),
 			'keyword': ts('#666666', undefinedStyle)
 		});
 	});
