@@ -171,6 +171,34 @@ body {
 	font-size: 16px; /* sets font-size for codicons in workbench (https://github.com/microsoft/vscode/issues/98495) */
 }
 
+/* Reduce ALL chevron icon sizes - section headers AND folder tree */
+/* Section header chevrons (OUTLINE, TIMELINE, IDE, etc.) */
+.monaco-pane-view .pane > .pane-header .twisty-container {
+	font-size: 12px !important;
+	font-weight: 900;
+	margin-left: 4px !important;
+	text-shadow: 0.3px 0 0 currentColor, -0.3px 0 0 currentColor, 0 0.3px 0 currentColor, 0 -0.3px 0 currentColor;
+}
+
+/* Folder tree chevrons (folders, files in explorer) */
+.monaco-tl-twistie {
+	font-size: 12px !important;
+	font-weight: 900;
+	margin-left: 4px !important;
+	text-shadow: 0.3px 0 0 currentColor, -0.3px 0 0 currentColor, 0 0.3px 0 currentColor, 0 -0.3px 0 currentColor;
+}
+
+/* Remove borders between pane sections (OUTLINE, TIMELINE, etc.) */
+.monaco-pane-view .pane > .pane-header {
+	border-top: none !important;
+	border-bottom: none !important;
+}
+
+.monaco-pane-view .split-view-view > .pane {
+	border-top: none !important;
+	border-bottom: none !important;
+}
+
 .monaco-workbench .predefined-file-icon[class*='codicon-']::before {
 	width: 16px;
 	padding-left: 3px; /* width (16px) - font-size (13px) = padding-left (3px) */

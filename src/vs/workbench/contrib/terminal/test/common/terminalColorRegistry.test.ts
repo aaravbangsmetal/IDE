@@ -69,7 +69,7 @@ suite('Workbench - TerminalColorRegistry', () => {
 			'#0451a5',
 			'#bc05bc',
 			'#0598bc',
-			'#555555',
+			'#606060',
 			'#666666',
 			'#cd3131',
 			'#14ce14',

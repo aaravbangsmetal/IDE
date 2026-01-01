@@ -166,10 +166,10 @@ export const ansiColorMap: { [key: string]: { index: number; defaults: ColorDefa
 	'terminal.ansiWhite': {
 		index: 7,
 		defaults: {
-			light: '#555555',
+			light: '#606060',
 			dark: '#e5e5e5',
 			hcDark: '#e5e5e5',
-			hcLight: '#555555'
+			hcLight: '#606060'
 		}
 	},
 	'terminal.ansiBrightBlack': {

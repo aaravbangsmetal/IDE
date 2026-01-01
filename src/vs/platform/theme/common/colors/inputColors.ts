@@ -201,7 +201,7 @@ export const keybindingLabelBackground = registerColor('keybindingLabel.backgrou
 	nls.localize('keybindingLabelBackground', "Keybinding label background color. The keybinding label is used to represent a keyboard shortcut."));
 
 export const keybindingLabelForeground = registerColor('keybindingLabel.foreground',
-	{ dark: Color.fromHex('#CCCCCC'), light: Color.fromHex('#555555'), hcDark: Color.white, hcLight: foreground },
+	{ dark: Color.fromHex('#CCCCCC'), light: Color.fromHex('#606060'), hcDark: Color.white, hcLight: foreground },
 	nls.localize('keybindingLabelForeground', "Keybinding label foreground color. The keybinding label is used to represent a keyboard shortcut."));
 
 export const keybindingLabelBorder = registerColor('keybindingLabel.border',
