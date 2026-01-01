@@ -756,8 +756,9 @@ export const VoidInputBox2 = forwardRef<HTMLTextAreaElement, InputBox2Props>(fun
 			className={`w-full resize-none max-h-[500px] overflow-y-auto text-void-fg-1 placeholder:text-void-fg-3 ${className}`}
 			style={{
 				// defaultInputBoxStyles
-				background: asCssVariable(inputBackground),
-				color: asCssVariable(inputForeground)
+				background: 'transparent',
+				color: asCssVariable(inputForeground),
+				caretColor: '#CCCCCC' // Visible light grey cursor
 				// inputBorder: asCssVariable(inputBorder),
 			}}
 
@@ -1391,7 +1392,14 @@ export const VoidCustomDropdownBox = <T extends NonNullable<any>>({
 			<button
 				type='button'
 				ref={refs.setReference}
-				className="flex items-center h-4 bg-transparent whitespace-nowrap hover:brightness-90 w-full"
+				className={`flex items-center whitespace-nowrap hover:brightness-110 ${className || ''}`}
+				style={{
+					height: '20px',
+					minHeight: '20px',
+					border: 'none',
+					outline: 'none',
+					cursor: 'pointer'
+				}}
 				onClick={() => setIsOpen(!isOpen)}
 			>
 				<span className={`truncate ${arrowTouchesText ? 'mr-1' : ''}`}>

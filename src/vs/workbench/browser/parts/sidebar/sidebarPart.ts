@@ -32,6 +32,10 @@ import { Separator } from '../../../../base/common/actions.js';
 import { ToggleActivityBarVisibilityActionId } from '../../actions/layoutActions.js';
 import { localize2 } from '../../../../nls.js';
 import { IHoverService } from '../../../../platform/hover/browser/hover.js';
+import { $, append, addDisposableListener, EventType } from '../../../../base/browser/dom.js';
+import { Codicon } from '../../../../base/common/codicons.js';
+import { ThemeIcon } from '../../../../base/common/themables.js';
+import { URI } from '../../../../base/common/uri.js';
 
 export class SidebarPart extends AbstractPaneCompositePart {
 
@@ -63,6 +67,10 @@ export class SidebarPart extends AbstractPaneCompositePart {
 	}
 
 	private readonly activityBarPart = this._register(this.instantiationService.createInstance(ActivitybarPart, this));
+
+	private verticalListViewContainer: HTMLElement | undefined;
+	private verticalListItemsContainer: HTMLElement | undefined;
+	private isVerticalListOpen: boolean = false;
 
 	//#endregion
 
@@ -271,8 +279,280 @@ export class SidebarPart extends AbstractPaneCompositePart {
 				const viewDescriptorService = (this as any).viewDescriptorService as IViewDescriptorService;
 				if (viewDescriptorService) {
 					this.filterPinnedViewContainers(viewDescriptorService);
+					this.createVerticalListView();
+					this.hookOverflowAction();
 				}
 			}, 100);
+		}
+	}
+
+	protected override createTitleArea(parent: HTMLElement): HTMLElement {
+		const titleArea = super.createTitleArea(parent);
+
+		// Create vertical list container after title area is created
+		setTimeout(() => {
+			this.createVerticalListView();
+		}, 100);
+
+		return titleArea;
+	}
+
+	private createVerticalListView(): void {
+		const container = this.getContainer();
+		if (!container || this.verticalListViewContainer) {
+			return;
+		}
+
+		// Find the title area
+		const titleArea = container.querySelector('.composite.title');
+		if (!titleArea) {
+			return;
+		}
+
+		// Create container for vertical list
+		this.verticalListViewContainer = append(titleArea.parentElement || container, $('.sidebar-vertical-list-container'));
+		this.verticalListViewContainer.style.display = 'none';
+
+		this.verticalListItemsContainer = append(this.verticalListViewContainer, $('.sidebar-vertical-list-items'));
+
+		// Update vertical list when composite bar changes
+		this._register(this.onDidCompositeOpen.event(() => {
+			this.updateVerticalListView();
+		}));
+
+		// Update when view containers change
+		const viewDescriptorService = (this as any).viewDescriptorService as IViewDescriptorService;
+		if (viewDescriptorService) {
+			this._register(viewDescriptorService.onDidChangeViewContainers(() => {
+				setTimeout(() => this.updateVerticalListView(), 100);
+			}));
+		}
+
+		this.updateVerticalListView();
+	}
+
+	private hookOverflowAction(): void {
+		// Hook into overflow action to toggle vertical list instead of showing context menu
+		// Try multiple times as the overflow action might be created later
+		let attempts = 0;
+		const tryHook = () => {
+			attempts++;
+			const paneCompositeBar = (this as any).paneCompositeBar?.value;
+			if (paneCompositeBar) {
+				const internalCompositeBar = (paneCompositeBar as any).compositeBar;
+				if (internalCompositeBar) {
+					const overflowAction = (internalCompositeBar as any).compositeOverflowAction;
+					const overflowActionViewItem = (internalCompositeBar as any).compositeOverflowActionViewItem;
+
+					if (overflowAction && overflowActionViewItem) {
+						if (!overflowAction._verticalListHooked) {
+							// Hook the action's run method (which calls the showMenu function passed to constructor)
+							overflowAction.run = () => {
+								this.toggleVerticalListView();
+								return Promise.resolve();
+							};
+
+							// Also hook showMenu as backup
+							overflowActionViewItem.showMenu = () => {
+								this.toggleVerticalListView();
+							};
+
+							// Change icon to chevronDown initially (instead of Codicon.more)
+							overflowAction.classNames = ThemeIcon.asClassNameArray(Codicon.chevronDown);
+							// Trigger update to refresh the icon
+							overflowActionViewItem.update();
+
+							// Also update DOM directly to ensure icon changes
+							if (overflowActionViewItem.label) {
+								const classList = overflowActionViewItem.label.classList;
+								const oldCodicons: string[] = [];
+								classList.forEach((c: string) => {
+									if (c.startsWith('codicon-')) {
+										oldCodicons.push(c);
+									}
+								});
+								classList.remove(...oldCodicons);
+								classList.add(...ThemeIcon.asClassNameArray(Codicon.chevronDown));
+							}
+
+							overflowAction._verticalListHooked = true;
+							overflowActionViewItem._verticalListHooked = true;
+						}
+						return; // Successfully hooked
+					}
+				}
+			}
+
+			// Retry if not hooked yet and haven't exceeded attempts
+			if (attempts < 10) {
+				setTimeout(tryHook, 200);
+			}
+		};
+
+		setTimeout(tryHook, 100);
+
+		// Also hook when composite switcher updates (when overflow action is created)
+		const paneCompositeBar = (this as any).paneCompositeBar?.value;
+		if (paneCompositeBar) {
+			const internalCompositeBar = (paneCompositeBar as any).compositeBar;
+			if (internalCompositeBar) {
+				const originalUpdateCompositeSwitcher = (internalCompositeBar as any).updateCompositeSwitcher;
+				if (originalUpdateCompositeSwitcher && !(internalCompositeBar as any)._verticalListHookAdded) {
+					(internalCompositeBar as any).updateCompositeSwitcher = function (...args: any[]) {
+						const result = originalUpdateCompositeSwitcher.apply(this, args);
+						// After update, try to hook overflow action
+						setTimeout(() => {
+							const overflowAction = (this as any).compositeOverflowAction;
+							const overflowActionViewItem = (this as any).compositeOverflowActionViewItem;
+							if (overflowAction && overflowActionViewItem && !overflowAction._verticalListHooked) {
+								overflowAction.run = () => {
+									(this as any)._sidebarPart?.toggleVerticalListView();
+									return Promise.resolve();
+								};
+								overflowActionViewItem.showMenu = () => {
+									(this as any)._sidebarPart?.toggleVerticalListView();
+								};
+								overflowAction.classNames = ThemeIcon.asClassNameArray(Codicon.chevronDown);
+								overflowActionViewItem.update();
+								overflowAction._verticalListHooked = true;
+								overflowActionViewItem._verticalListHooked = true;
+							}
+						}, 50);
+						return result;
+					};
+					(internalCompositeBar as any)._sidebarPart = this;
+					(internalCompositeBar as any)._verticalListHookAdded = true;
+				}
+			}
+		}
+	}
+
+	private updateVerticalListView(): void {
+		if (!this.verticalListItemsContainer) {
+			return;
+		}
+
+		// Clear existing items
+		this.verticalListItemsContainer.innerHTML = '';
+
+		// Get overflow items (all items except the main 4)
+		const mainViewContainers = ['workbench.view.explorer', 'workbench.view.search', 'workbench.view.scm', 'workbench.view.extensions'];
+		const viewDescriptorService = (this as any).viewDescriptorService as IViewDescriptorService;
+		if (!viewDescriptorService) {
+			return;
+		}
+
+		const allViewContainers = viewDescriptorService.getViewContainersByLocation(ViewContainerLocation.Sidebar);
+		const overflowContainers = allViewContainers.filter((container: any) => !mainViewContainers.includes(container.id));
+
+		if (overflowContainers.length === 0) {
+			if (this.verticalListViewContainer) {
+				this.verticalListViewContainer.style.display = 'none';
+			}
+			return;
+		}
+
+		// Create list items for each overflow container
+		const activeCompositeId = this.getActivePaneComposite()?.getId();
+
+		for (const container of overflowContainers) {
+			const item = append(this.verticalListItemsContainer, $('.sidebar-vertical-list-item'));
+
+			if (container.id === activeCompositeId) {
+				item.classList.add('active');
+			}
+
+			// Icon
+			const icon = append(item, $('.item-icon'));
+			const containerIcon = container.icon instanceof URI ? undefined : container.icon;
+			icon.className = `item-icon ${ThemeIcon.asClassName(containerIcon || Codicon.package)}`;
+
+			// Label - get name from view container model
+			const label = append(item, $('.item-label'));
+			const containerModel = viewDescriptorService.getViewContainerModel(container);
+			const containerTitle = containerModel?.title || container.id;
+			label.textContent = containerTitle;
+
+			// Keyboard shortcut - try to find the command ID
+			const commandId = `workbench.view.${container.id}`;
+			const keybinding = this.keybindingService.lookupKeybinding(commandId);
+			if (keybinding) {
+				const keybindingEl = append(item, $('.item-keybinding'));
+				keybindingEl.textContent = keybinding.getLabel() || '';
+			}
+
+			// Pin icon (if pinned)
+			const paneCompositeBar = (this as any).paneCompositeBar?.value;
+			if (paneCompositeBar) {
+				const internalCompositeBar = (paneCompositeBar as any).compositeBar;
+				if (internalCompositeBar?.isPinned(container.id)) {
+					const pinIcon = append(item, $('.item-pin'));
+					pinIcon.className = `item-pin ${ThemeIcon.asClassName(Codicon.pinned)}`;
+				}
+			}
+
+			// Click handler
+			addDisposableListener(item, EventType.CLICK, () => {
+				this.openPaneComposite(container.id, true);
+				this.toggleVerticalListView(false);
+			});
+		}
+
+		// Update overflow button icon based on state
+		this.updateOverflowButtonIcon();
+	}
+
+	private toggleVerticalListView(show?: boolean): void {
+		if (show === undefined) {
+			this.isVerticalListOpen = !this.isVerticalListOpen;
+		} else {
+			this.isVerticalListOpen = show;
+		}
+
+		if (this.verticalListViewContainer) {
+			if (this.isVerticalListOpen) {
+				this.updateVerticalListView();
+				this.verticalListViewContainer.style.display = 'block';
+			} else {
+				this.verticalListViewContainer.style.display = 'none';
+			}
+		}
+
+		this.updateOverflowButtonIcon();
+	}
+
+	private updateOverflowButtonIcon(): void {
+		// Find the overflow button and update its icon
+		const paneCompositeBar = (this as any).paneCompositeBar?.value;
+		if (paneCompositeBar) {
+			const internalCompositeBar = (paneCompositeBar as any).compositeBar;
+			if (internalCompositeBar) {
+				const overflowAction = (internalCompositeBar as any).compositeOverflowAction;
+				const overflowViewItem = (internalCompositeBar as any).compositeOverflowActionViewItem;
+
+				if (overflowAction && overflowViewItem) {
+					// Update icon to chevron-up when open, chevron-down when closed
+					const iconClass = this.isVerticalListOpen ? Codicon.chevronUp : Codicon.chevronDown;
+					overflowAction.classNames = ThemeIcon.asClassNameArray(iconClass);
+
+					// Update the view item to refresh the icon
+					overflowViewItem.update();
+
+					// Also update DOM directly as backup
+					if (overflowViewItem.label) {
+						// Remove old codicon classes and add new one
+						const classList = overflowViewItem.label.classList;
+						const oldCodicons: string[] = [];
+						classList.forEach((c: string) => {
+							if (c.startsWith('codicon-')) {
+								oldCodicons.push(c);
+							}
+						});
+						classList.remove(...oldCodicons);
+						classList.add(...ThemeIcon.asClassNameArray(iconClass));
+					}
+				}
+			}
 		}
 	}
 

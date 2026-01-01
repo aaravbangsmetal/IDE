@@ -342,14 +342,19 @@ export const VoidChatArea: React.FC<VoidChatAreaProps> = ({
 			ref={divRef}
 			className={`
 				gap-x-1
-                flex flex-col p-2 relative input text-left shrink-0
-                rounded-md
-                bg-void-bg-1
+                flex flex-col relative input text-left shrink-0
+                rounded-lg
+                bg-void-bg-3
 				transition-all duration-200
-				border border-void-border-3 focus-within:border-void-border-1 hover:border-void-border-1
+				border border-[#3a3a3a]
 				max-h-[80vh] overflow-y-auto
                 ${className}
             `}
+			style={{
+				padding: '10px 12px 12px 12px',
+				minHeight: '52px',
+				boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 0 0 1px rgba(0, 0, 0, 0.15)'
+			}}
 			onClick={(e) => {
 				onClickAnywhere?.()
 			}}
@@ -387,8 +392,8 @@ export const VoidChatArea: React.FC<VoidChatAreaProps> = ({
 						<ReasoningOptionSlider featureName={featureName} />
 
 						<div className='flex items-center flex-wrap gap-x-2 gap-y-1 text-nowrap '>
-							{featureName === 'Chat' && <ChatModeDropdown className='text-xs text-void-fg-3 bg-void-bg-1 border border-void-border-2 rounded py-0.5 px-1' />}
-							<ModelDropdown featureName={featureName} className='text-xs text-void-fg-3 bg-void-bg-1 rounded' />
+							{featureName === 'Chat' && <ChatModeDropdown className='text-xs text-[#CCCCCC] bg-[#3a3a3a] rounded px-2 py-1 border-none' />}
+							<ModelDropdown featureName={featureName} className='text-xs text-[#CCCCCC] bg-[#3a3a3a] rounded px-2 py-1 border-none' />
 						</div>
 					</div>
 				)}
@@ -422,15 +427,21 @@ export const ButtonSubmit = ({ className, disabled, ...props }: ButtonProps & Re
 	return <button
 		type='button'
 		className={`rounded-full flex-shrink-0 flex-grow-0 flex items-center justify-center
-			${disabled ? 'bg-vscode-disabled-fg cursor-default' : 'bg-white cursor-pointer'}
+			${disabled ? 'bg-[#3a3a3a] cursor-default opacity-50' : 'bg-[#3a3a3a] cursor-pointer hover:bg-[#454545]'}
 			${className}
 		`}
+		style={{
+			width: '22px',
+			height: '22px',
+			border: 'none',
+			outline: 'none'
+		}}
 		// data-tooltip-id='void-tooltip'
 		// data-tooltip-content={'Send'}
 		// data-tooltip-place='left'
 		{...props}
 	>
-		<IconArrowUp size={DEFAULT_BUTTON_SIZE} className="stroke-[2] p-[2px]" />
+		<IconArrowUp size={DEFAULT_BUTTON_SIZE} className="stroke-[2] p-[2px] text-[#CCCCCC]" />
 	</button>
 }
 
@@ -3077,7 +3088,7 @@ export const SidebarChat = () => {
 	>
 		<VoidInputBox2
 			enableAtToMention
-			className={`min-h-[81px] px-0.5 py-0.5`}
+			className={`min-h-[40px] px-0 py-0`}
 			placeholder={`@ to mention, ${keybindingString ? `${keybindingString} to add a selection. ` : ''}Enter instructions...`}
 			onChangeText={onChangeText}
 			onKeyDown={onKeyDown}
