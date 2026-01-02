@@ -104,3 +104,11 @@
 	width: 16px;
 	height: 16px;
 }
+
+/* Style history dropdown chevron to match pane header chevrons */
+.monaco-inputbox .monaco-action-bar .action-item .codicon-chevron-down {
+	font-size: 12px !important;
+	font-weight: 900 !important;
+	text-shadow: 0.3px 0 0 currentColor, -0.3px 0 0 currentColor, 0 0.3px 0 currentColor, 0 -0.3px 0 currentColor !important;
+	color: #4b4b4b !important;
+}

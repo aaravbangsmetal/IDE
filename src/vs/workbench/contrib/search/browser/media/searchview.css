@@ -36,6 +36,20 @@
 	align-items: center;
 	justify-content: center;
 	background-color: unset;
+	font-size: 12px !important;
+	font-weight: 900 !important;
+	text-shadow: 0.3px 0 0 currentColor, -0.3px 0 0 currentColor, 0 0.3px 0 currentColor, 0 -0.3px 0 currentColor !important;
+	color: #4b4b4b !important;
+}
+
+/* Style toggle replace chevron - target the codicon directly */
+.search-view .search-widget .toggle-replace-button .codicon,
+.search-view .search-widget .toggle-replace-button.codicon,
+.search-view .search-widget .toggle-replace-button::before {
+	font-size: 12px !important;
+	font-weight: 900 !important;
+	text-shadow: 0.3px 0 0 currentColor, -0.3px 0 0 currentColor, 0 0.3px 0 currentColor, 0 -0.3px 0 currentColor !important;
+	color: #4b4b4b !important;
 }
 
 .monaco-workbench .search-view .search-widget .toggle-replace-button:hover {

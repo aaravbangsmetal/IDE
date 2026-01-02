@@ -33,7 +33,7 @@ export const chatSlashCommandForeground = registerColor(
 
 export const chatAvatarBackground = registerColor(
 	'chat.avatarBackground',
-	{ dark: '#131313', light: '#f2f2f2', hcDark: Color.black, hcLight: Color.white, },
+	{ dark: '#161616', light: '#f2f2f2', hcDark: Color.black, hcLight: Color.white, },
 	localize('chat.avatarBackground', 'The background color of a chat avatar.')
 );
 

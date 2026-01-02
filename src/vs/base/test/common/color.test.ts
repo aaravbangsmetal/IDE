@@ -675,9 +675,9 @@ suite('Color', () => {
 			assertContrastRatio(0xffffffff, 0x606060ff, 13, 0x313131ff);
 			assertContrastRatio(0xffffffff, 0x606060ff, 14, 0x272727ff);
 			assertContrastRatio(0xffffffff, 0x606060ff, 15, 0x232323ff);
-			assertContrastRatio(0xffffffff, 0x606060ff, 16, 0x131313ff);
+			assertContrastRatio(0xffffffff, 0x606060ff, 16, 0x161616ff);
 			assertContrastRatio(0xffffffff, 0x606060ff, 17, 0x1b1b1bff);
-			assertContrastRatio(0xffffffff, 0x606060ff, 18, 0x131313ff);
+			assertContrastRatio(0xffffffff, 0x606060ff, 18, 0x161616ff);
 			assertContrastRatio(0xffffffff, 0x606060ff, 19, 0x101010ff);
 			assertContrastRatio(0xffffffff, 0x606060ff, 20, 0x080808ff);
 			assertContrastRatio(0xffffffff, 0x606060ff, 21, 0x000000ff);

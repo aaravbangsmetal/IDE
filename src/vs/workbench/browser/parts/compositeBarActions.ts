@@ -456,7 +456,7 @@ export class CompositeOverflowActivityAction extends CompositeBarAction {
 		super({
 			id: 'additionalComposites.action',
 			name: localize('additionalViews', "Additional Views"),
-			classNames: ThemeIcon.asClassNameArray(Codicon.more)
+			classNames: ThemeIcon.asClassNameArray(Codicon.chevronDown)
 		});
 	}
 

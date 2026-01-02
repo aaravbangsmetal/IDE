@@ -178,6 +178,7 @@ body {
 	font-weight: 900;
 	margin-left: 4px !important;
 	text-shadow: 0.3px 0 0 currentColor, -0.3px 0 0 currentColor, 0 0.3px 0 currentColor, 0 -0.3px 0 currentColor;
+	color: #4b4b4b !important;
 }
 
 /* Folder tree chevrons (folders, files in explorer) */
@@ -186,6 +187,15 @@ body {
 	font-weight: 900;
 	margin-left: 4px !important;
 	text-shadow: 0.3px 0 0 currentColor, -0.3px 0 0 currentColor, 0 0.3px 0 currentColor, 0 -0.3px 0 currentColor;
+}
+
+/* Search dropdown chevron */
+.search-view .query-details .more,
+.monaco-workbench .search-view .query-details .more .codicon {
+	font-size: 12px !important;
+	font-weight: 900;
+	text-shadow: 0.3px 0 0 currentColor, -0.3px 0 0 currentColor, 0 0.3px 0 currentColor, 0 -0.3px 0 currentColor;
+	color: #4b4b4b !important;
 }
 
 /* Remove borders between pane sections (OUTLINE, TIMELINE, etc.) */
@@ -345,4 +355,12 @@ body {
 .monaco-workbench .monaco-action-bar:not(.vertical) .action-item .action-label:hover:not(.disabled) {
 	outline: 1px dashed var(--vscode-toolbar-hoverOutline);
 	outline-offset: -1px;
+}
+
+/* Style text labels in composite bar (EXPLORER, SOURCE CONTROL, SEARCH, etc.) */
+.monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:not(.icon) .action-label,
+.monaco-workbench .pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:not(.icon) .action-label {
+	font-weight: 600 !important;
+	margin-left: -4px !important;
+	color: #4b4b4b !important;
 }

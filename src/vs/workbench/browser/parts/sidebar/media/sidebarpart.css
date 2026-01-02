@@ -22,6 +22,9 @@
 
 .monaco-workbench .part.sidebar > .title > .title-label h2 {
 	text-transform: uppercase;
+	font-weight: 700 !important;
+	margin-left: -1px !important;
+	color: #4b4b4b !important;
 }
 
 .monaco-workbench .viewlet .collapsible.header .title {
@@ -110,9 +113,13 @@
 /* Vertical list container for sidebar overflow items */
 .monaco-workbench .sidebar-vertical-list-container {
 	background-color: var(--vscode-sideBar-background);
-	border-top: 1px solid var(--vscode-sideBar-border, transparent);
+	border-bottom: 1px solid var(--vscode-sideBar-border, transparent);
 	padding: 4px 0;
 	overflow: hidden;
+	position: absolute;
+	left: 0;
+	right: 1px; /* Leave space for sidebar border */
+	z-index: 1000;
 }
 
 .monaco-workbench .sidebar-vertical-list-items {

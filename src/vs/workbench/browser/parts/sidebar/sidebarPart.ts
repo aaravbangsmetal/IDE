@@ -32,7 +32,7 @@ import { Separator } from '../../../../base/common/actions.js';
 import { ToggleActivityBarVisibilityActionId } from '../../actions/layoutActions.js';
 import { localize2 } from '../../../../nls.js';
 import { IHoverService } from '../../../../platform/hover/browser/hover.js';
-import { $, append, addDisposableListener, EventType } from '../../../../base/browser/dom.js';
+import { $, append, addDisposableListener, EventType, clearNode } from '../../../../base/browser/dom.js';
 import { Codicon } from '../../../../base/common/codicons.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { URI } from '../../../../base/common/uri.js';
@@ -158,54 +158,89 @@ export class SidebarPart extends AbstractPaneCompositePart {
 			const location = ViewContainerLocation.Sidebar;
 			const allViewContainers = viewDescriptorService.getViewContainersByLocation(location);
 
-			// Access the internal composite bar to unpin items
+			// Access the internal composite bar
 			const internalCompositeBar = (paneCompositeBar as any).compositeBar;
 
 			if (internalCompositeBar) {
-				// Override getOverflowingComposites to include all visible items, not just pinned ones
-				const originalGetOverflowingComposites = (internalCompositeBar as any).getOverflowingComposites;
-				if (originalGetOverflowingComposites && !(internalCompositeBar as any)._overflowOverridden) {
-					(internalCompositeBar as any).getOverflowingComposites = function () {
-						const model = (this as any).model;
-						const visibleComposites = (this as any).visibleComposites || [];
-
-						// Get all visible items that aren't in the visible composites (main 4)
-						const allVisibleIds = model.visibleItems.map((item: any) => item.id);
-						const overflowingIds = allVisibleIds.filter((id: string) => !visibleComposites.includes(id));
-
-						// Also include active item if it's not already included
-						if (model.activeItem && !overflowingIds.includes(model.activeItem.id) && !visibleComposites.includes(model.activeItem.id)) {
-							overflowingIds.push(model.activeItem.id);
-						}
-
-						return model.visibleItems
-							.filter((c: any) => overflowingIds.includes(c.id))
-							.map((item: any) => {
-								const action = (this as any).getAction(item.id);
-								return { id: item.id, name: action?.label || item.name };
-							});
-					};
-					(internalCompositeBar as any)._overflowOverridden = true;
-				}
-
+				// Pin ALL items so overflow button appears
 				for (const container of allViewContainers) {
-					if (!mainViewContainers.includes(container.id)) {
-						// Unpin items that aren't in the main 4 - they'll go to overflow
-						if (internalCompositeBar.isPinned(container.id)) {
-							internalCompositeBar.unpin(container.id);
-						}
-					} else {
-						// Ensure main items are pinned
-						if (!internalCompositeBar.isPinned(container.id)) {
-							internalCompositeBar.pin(container.id);
-						}
+					if (!internalCompositeBar.isPinned(container.id)) {
+						internalCompositeBar.pin(container.id);
 					}
 				}
 
-				// Force update to ensure overflow shows when there are more than 4 items
+				// Override updateCompositeSwitcher to force exactly 4 items visible + overflow
+				const originalUpdateCompositeSwitcher = (internalCompositeBar as any).updateCompositeSwitcher;
+				if (originalUpdateCompositeSwitcher && !(internalCompositeBar as any)._updateOverridden) {
+					const sidebarPart = this;
+					(internalCompositeBar as any).updateCompositeSwitcher = function (donotTrigger?: boolean) {
+						const model = (this as any).model;
+
+						// Force dimension to show exactly 4 main items + chevron
+						const originalDimension = (this as any).dimension;
+						if (originalDimension) {
+							// Need room for 4 items + overflow chevron
+							// 4 items * 50px = 200px, but we need it tight enough to trigger overflow
+							// Setting it to 220px ensures overflow appears
+							const forcedDimension = {
+								width: 220,
+								height: originalDimension.height
+							};
+							(this as any).dimension = forcedDimension;
+						}
+
+						// Call original with forced dimension
+						originalUpdateCompositeSwitcher.call(this, donotTrigger);
+
+						// Restore original
+						if (originalDimension) {
+							(this as any).dimension = originalDimension;
+						}
+
+						// IMMEDIATELY hook the overflow action - no setTimeout!
+						const overflowAction = (this as any).compositeOverflowAction;
+						const overflowActionViewItem = (this as any).compositeOverflowActionViewItem;
+						if (overflowAction && overflowActionViewItem && !overflowAction._verticalListHooked) {
+							// Change icon to chevronDown FIRST before anything else
+							overflowAction.classNames = ThemeIcon.asClassNameArray(Codicon.chevronDown);
+
+							// Update DOM directly and immediately
+							if (overflowActionViewItem.label) {
+								const classList = overflowActionViewItem.label.classList;
+								const oldCodicons: string[] = [];
+								classList.forEach((c: string) => {
+									if (c.startsWith('codicon-')) {
+										oldCodicons.push(c);
+									}
+								});
+								classList.remove(...oldCodicons);
+								classList.add(...ThemeIcon.asClassNameArray(Codicon.chevronDown));
+							}
+
+							// Force viewItem update to reflect icon change
+							overflowActionViewItem.update();
+
+							// Hook the action's run method
+							overflowAction.run = () => {
+								sidebarPart.toggleVerticalListView();
+								return Promise.resolve();
+							};
+
+							// Also hook showMenu as backup
+							overflowActionViewItem.showMenu = () => {
+								sidebarPart.toggleVerticalListView();
+							};
+
+							overflowAction._verticalListHooked = true;
+							overflowActionViewItem._verticalListHooked = true;
+						}
+					};
+					(internalCompositeBar as any)._updateOverridden = true;
+				}
+
+				// Force update to trigger overflow creation
 				const updateMethod = (internalCompositeBar as any).updateCompositeSwitcher;
 				if (updateMethod) {
-					// Trigger update - this will create overflow if needed
 					setTimeout(() => {
 						updateMethod.call(internalCompositeBar);
 					}, 100);
@@ -303,15 +338,30 @@ export class SidebarPart extends AbstractPaneCompositePart {
 			return;
 		}
 
-		// Find the title area
-		const titleArea = container.querySelector('.composite.title');
-		if (!titleArea) {
+		// Find the composite bar container - we want to put the dropdown right after it
+		const compositeBarContainer = container.querySelector('.composite-bar-container');
+		if (!compositeBarContainer) {
+			console.warn('⚠️ Could not find composite bar container');
 			return;
 		}
 
-		// Create container for vertical list
-		this.verticalListViewContainer = append(titleArea.parentElement || container, $('.sidebar-vertical-list-container'));
+		// Find the title element to position the dropdown right below the composite bar
+		const titleElement = container.querySelector('.composite.title');
+		if (!titleElement) {
+			console.warn('⚠️ Could not find title element');
+			return;
+		}
+
+		// Create container for vertical list - insert it after the title area but inside sidebar
+		this.verticalListViewContainer = append(titleElement.parentElement || container, $('.sidebar-vertical-list-container'));
 		this.verticalListViewContainer.style.display = 'none';
+
+		// Position it right below the composite bar, staying within sidebar bounds
+		// The composite bar height is approximately 40px
+		const compositeBarHeight = (compositeBarContainer as HTMLElement).offsetHeight || 40;
+		this.verticalListViewContainer.style.top = `${compositeBarHeight}px`;
+		this.verticalListViewContainer.style.maxHeight = '400px';
+		this.verticalListViewContainer.style.overflowY = 'auto';
 
 		this.verticalListItemsContainer = append(this.verticalListViewContainer, $('.sidebar-vertical-list-items'));
 
@@ -432,30 +482,41 @@ export class SidebarPart extends AbstractPaneCompositePart {
 			return;
 		}
 
-		// Clear existing items
-		this.verticalListItemsContainer.innerHTML = '';
+		// Clear existing items using DOM API (not innerHTML for Trusted Types)
+		clearNode(this.verticalListItemsContainer);
 
-		// Get overflow items (all items except the main 4)
-		const mainViewContainers = ['workbench.view.explorer', 'workbench.view.search', 'workbench.view.scm', 'workbench.view.extensions'];
+		// Get all view containers
 		const viewDescriptorService = (this as any).viewDescriptorService as IViewDescriptorService;
 		if (!viewDescriptorService) {
 			return;
 		}
 
 		const allViewContainers = viewDescriptorService.getViewContainersByLocation(ViewContainerLocation.Sidebar);
-		const overflowContainers = allViewContainers.filter((container: any) => !mainViewContainers.includes(container.id));
 
-		if (overflowContainers.length === 0) {
+		// Sort containers to show main 4 first, then the rest
+		const mainIds = ['workbench.view.explorer', 'workbench.view.search', 'workbench.view.scm', 'workbench.view.extensions'];
+
+		// Separate main containers and others
+		const mainContainers = mainIds
+			.map(id => allViewContainers.find((c: any) => c.id === id))
+			.filter(c => c !== undefined);
+
+		const otherContainers = allViewContainers.filter((c: any) => !mainIds.includes(c.id));
+
+		// Combine: main 4 first, then the rest
+		const allContainers = [...mainContainers, ...otherContainers];
+
+		if (allContainers.length === 0) {
 			if (this.verticalListViewContainer) {
 				this.verticalListViewContainer.style.display = 'none';
 			}
 			return;
 		}
 
-		// Create list items for each overflow container
+		// Create list items for each container
 		const activeCompositeId = this.getActivePaneComposite()?.getId();
 
-		for (const container of overflowContainers) {
+		for (const container of allContainers) {
 			const item = append(this.verticalListItemsContainer, $('.sidebar-vertical-list-item'));
 
 			if (container.id === activeCompositeId) {
@@ -568,7 +629,7 @@ export class SidebarPart extends AbstractPaneCompositePart {
 			viewContainersWorkspaceStateKey: ActivitybarPart.viewContainersWorkspaceStateKey,
 			icon: true, // Show only icons, no labels
 			orientation: ActionsOrientation.HORIZONTAL,
-			recomputeSizes: true,
+			recomputeSizes: false, // Disable dynamic sizing to force overflow
 			activityHoverOptions: {
 				position: () => this.getCompositeBarPosition() === CompositeBarPosition.BOTTOM ? HoverPosition.ABOVE : HoverPosition.BELOW,
 			},
@@ -581,9 +642,9 @@ export class SidebarPart extends AbstractPaneCompositePart {
 					}
 				}
 			},
-			compositeSize: 0,
+			compositeSize: 50, // Size for each composite item to trigger overflow
 			iconSize: 13, // Reduced by 20% from 16px
-			overflowActionSize: 30, // Size for overflow dropdown button
+			overflowActionSize: 50, // Size for overflow dropdown button
 			colors: theme => ({
 				activeBackgroundColor: theme.getColor(SIDE_BAR_BACKGROUND),
 				inactiveBackgroundColor: theme.getColor(SIDE_BAR_BACKGROUND),
