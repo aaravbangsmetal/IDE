@@ -61,12 +61,15 @@
 
 .monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-label.codicon-more,
 .monaco-workbench .pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-label.codicon-more {
-	display: flex;
+	display: flex !important;
 	align-items: center;
 	justify-content: center;
 	margin-left: 0px;
 	margin-right: 0px;
 	color: inherit !important;
+	font-size: 15px !important;
+	width: 15px !important;
+	height: 15px !important;
 }
 
 .monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar,
@@ -99,8 +102,8 @@
 	color: #4b4b4b !important;
 }
 
-/* Hide ALL text labels for sidebar - show only icons */
-.monaco-workbench .sidebar.pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:not(.icon) {
+/* Hide ALL text labels for sidebar - show only icons - BUT KEEP OVERFLOW BUTTON */
+.monaco-workbench .sidebar.pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:not(.icon):not([aria-label*="Additional"]):not([aria-label*="Views"]) {
 	display: none !important; /* Hide non-icon items completely */
 }
 
@@ -109,8 +112,8 @@
 	display: none !important; /* Hide any non-codicon labels */
 }
 
-/* Hide text that might be rendered as content */
-.monaco-workbench .sidebar.pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.icon .action-label {
+/* Hide text that might be rendered as content - but NOT the overflow dropdown button */
+.monaco-workbench .sidebar.pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.icon .action-label:not(.codicon-more) {
 	font-size: 0 !important;
 	line-height: 0 !important;
 	width: 0 !important;
@@ -120,26 +123,45 @@
 	color: transparent !important;
 }
 
-/* Ensure codicon icons are visible */
+/* FORCE overflow button to be visible */
+.monaco-workbench .sidebar.pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item .action-label.codicon-more {
+	display: flex !important;
+	font-size: 15px !important;
+	width: 15px !important;
+	height: 15px !important;
+	line-height: 15px !important;
+	color: inherit !important;
+	overflow: visible !important;
+	text-indent: 0 !important;
+	align-items: center !important;
+	justify-content: center !important;
+}
+
+/* Also target the action-item itself for overflow */
+.monaco-workbench .sidebar.pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:has(.codicon-more) {
+	display: flex !important;
+}
+
+/* Ensure codicon icons are visible - increased by 20% from 13px to 16px */
 .monaco-workbench .sidebar.pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.icon .action-label.codicon {
 	display: flex !important;
 	color: inherit !important;
-	font-size: 13px !important;
-	width: 13px !important;
-	height: 13px !important;
-	line-height: 13px !important;
+	font-size: 15px !important;
+	width: 15px !important;
+	height: 15px !important;
+	line-height: 15px !important;
 	text-indent: 0 !important;
 	overflow: visible !important;
 	align-items: center !important;
 	justify-content: center !important;
 }
 
-/* Ensure overflow dropdown (more button) is always visible */
+/* Ensure overflow dropdown (more button) is always visible - increased by 20% */
 .monaco-workbench .sidebar.pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item .action-label.codicon-more {
 	display: flex !important;
-	font-size: 13px !important;
-	width: 13px !important;
-	height: 13px !important;
+	font-size: 15px !important;
+	width: 15px !important;
+	height: 15px !important;
 	color: inherit !important;
 	overflow: visible !important;
 }
@@ -158,8 +180,8 @@
 
 .monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.icon .action-label:not(.codicon),
 .monaco-workbench .pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.icon .action-label:not(.codicon) {
-	width: 13px; /* Reduced by 20% from 16px */
-	height: 13px; /* Reduced by 20% from 16px */
+	width: 15px; /* Increased by 20% from 13px */
+	height: 15px; /* Increased by 20% from 13px */
 }
 
 .monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item::before,
