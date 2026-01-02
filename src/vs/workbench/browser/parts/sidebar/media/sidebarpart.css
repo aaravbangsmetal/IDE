@@ -22,6 +22,9 @@
 
 .monaco-workbench .part.sidebar > .title > .title-label h2 {
 	text-transform: uppercase;
+	font-weight: 700 !important;
+	margin-left: -1px !important;
+	color: #4b4b4b !important;
 }
 
 .monaco-workbench .viewlet .collapsible.header .title {

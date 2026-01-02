@@ -85,6 +85,20 @@
 	display: flex;
 }
 
+/* Style text labels in composite bar (EXPLORER, SOURCE CONTROL, SEARCH, etc.) */
+.monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:not(.icon),
+.monaco-workbench .pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:not(.icon) {
+	padding-left: 6px !important; /* Shift left by reducing padding from 10px to 6px */
+}
+
+.monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:not(.icon) .action-label,
+.monaco-workbench .pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:not(.icon) .action-label,
+.monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item .action-label:not([class*="codicon-"]):not(.codicon),
+.monaco-workbench .pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item .action-label:not([class*="codicon-"]):not(.codicon) {
+	font-weight: 600 !important;
+	color: #4b4b4b !important;
+}
+
 /* Hide ALL text labels for sidebar - show only icons */
 .monaco-workbench .sidebar.pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:not(.icon) {
 	display: none !important; /* Hide non-icon items completely */

@@ -82,7 +82,7 @@ export const COLOR_THEME_LIGHT_INITIAL_COLORS = {
 	'activityBar.activeBorder': '#005FB8',
 	'activityBar.background': '#f8f8f8',
 	'activityBar.border': '#e5e5e5',
-	'activityBar.foreground': '#131313',
+	'activityBar.foreground': '#161616',
 	'activityBar.inactiveForeground': '#616161',
 	'editorGroup.border': '#e5e5e5',
 	'editorGroupHeader.tabsBackground': '#f8f8f8',
