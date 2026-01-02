@@ -88,7 +88,7 @@
 .monaco-workbench .part.sidebar > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.checked.clicked:focus .active-item-indicator:before,
 .monaco-workbench .part.sidebar > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.checked:not(:focus) .active-item-indicator:before,
 .monaco-workbench .part.sidebar > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.checked.clicked:focus .active-item-indicator:before {
-	border-top-color: var(--vscode-activityBarTop-activeBorder) !important;
+	border-top-color: transparent !important; /* Hide the line indicator */
 }
 
 .monaco-workbench .part.sidebar > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:hover .action-label,
@@ -140,12 +140,14 @@
 }
 
 .monaco-workbench .sidebar-vertical-list-item:hover {
-	background-color: var(--vscode-list-hoverBackground);
+	background-color: #222222;
+	color: #cecece;
+	;
 }
 
 .monaco-workbench .sidebar-vertical-list-item.active {
 	background-color: #222222;
-	color: var(--vscode-sideBar-foreground);
+	color: #cecece;
 }
 
 .monaco-workbench .sidebar-vertical-list-item .item-icon {
@@ -172,7 +174,7 @@
 }
 
 .monaco-workbench .sidebar-vertical-list-item.active .item-keybinding {
-	color: var(--vscode-list-activeSelectionForeground);
+	color: #FFFFFF;
 }
 
 .monaco-workbench .sidebar-vertical-list-item .item-pin {
@@ -185,4 +187,58 @@
 	font-size: 12px;
 	color: var(--vscode-descriptionForeground);
 	margin-left: 4px;
+}
+
+/* Apply same colors to file explorer tree items */
+.monaco-workbench .part.sidebar .monaco-list-row:hover:not(.selected):not(.focused) {
+	background-color: #222222 !important;
+	color: #cecece !important;
+}
+
+.monaco-workbench .part.sidebar .monaco-list-row.selected,
+.monaco-workbench .part.sidebar .monaco-list-row.focused {
+	background-color: #222222 !important;
+	color: #cecece !important;
+}
+
+/* Apply same colors to active/checked icons in the top composite bar */
+.monaco-workbench .part.sidebar > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.checked .action-label,
+.monaco-workbench .part.sidebar > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.checked .action-label {
+	background-color: #222222 !important;
+}
+
+/* Active icon color (Explorer, Search, Source Control, Extensions) */
+.monaco-workbench .part.sidebar > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.checked .action-label::before,
+.monaco-workbench .part.sidebar > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.checked .action-label::before {
+	color: #cecece !important;
+}
+
+/* Hover state for chevron dropdown - color only on hover */
+.monaco-workbench .part.sidebar > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:hover .action-label.codicon-chevron-down,
+.monaco-workbench .part.sidebar > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:hover .action-label.codicon-chevron-down,
+.monaco-workbench .part.sidebar > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:hover .action-label.codicon-chevron-down::before,
+.monaco-workbench .part.sidebar > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:hover .action-label.codicon-chevron-down::before {
+	background-color: #222222 !important;
+	color: #cecece !important;
+}
+
+/* Chevron dropdown active (when dropdown is open) */
+.monaco-workbench .part.sidebar > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.checked .action-label.codicon-chevron-down,
+.monaco-workbench .part.sidebar > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.checked .action-label.codicon-chevron-down,
+.monaco-workbench .part.sidebar > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.checked .action-label.codicon-chevron-down::before,
+.monaco-workbench .part.sidebar > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.checked .action-label.codicon-chevron-down::before {
+	background-color: #222222 !important;
+	color: #cecece !important;
+}
+
+/* Active dropdown menu item icon color */
+.monaco-workbench .sidebar-vertical-list-item.active .item-icon,
+.monaco-workbench .sidebar-vertical-list-item.active .item-icon::before {
+	color: #cecece !important;
+}
+
+/* Hovered dropdown menu item icon color */
+.monaco-workbench .sidebar-vertical-list-item:hover .item-icon,
+.monaco-workbench .sidebar-vertical-list-item:hover .item-icon::before {
+	color: #cecece !important;
 }
