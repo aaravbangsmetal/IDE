@@ -38,7 +38,7 @@
 	background-color: unset;
 	font-size: 12px !important;
 	font-weight: 900 !important;
-	text-shadow: 0.3px 0 0 currentColor, -0.3px 0 0 currentColor, 0 0.3px 0 currentColor, 0 -0.3px 0 currentColor !important;
+	text-shadow: 0.1px 0 0 currentColor, -0.1px 0 0 currentColor, 0 0.1px 0 currentColor, 0 -0.1px 0 currentColor !important;
 	color: #4b4b4b !important;
 }
 
@@ -48,7 +48,7 @@
 .search-view .search-widget .toggle-replace-button::before {
 	font-size: 12px !important;
 	font-weight: 900 !important;
-	text-shadow: 0.3px 0 0 currentColor, -0.3px 0 0 currentColor, 0 0.3px 0 currentColor, 0 -0.3px 0 currentColor !important;
+	text-shadow: 0.1px 0 0 currentColor, -0.1px 0 0 currentColor, 0 0.1px 0 currentColor, 0 -0.1px 0 currentColor !important;
 	color: #4b4b4b !important;
 }
 
