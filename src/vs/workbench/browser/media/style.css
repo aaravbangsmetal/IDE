@@ -3,6 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+/* Remove all focus borders globally */
+.monaco-workbench *:focus,
+.monaco-workbench *:focus-visible {
+	outline: none !important;
+}
+
 /* Animations */
 
 @keyframes fadeIn {
@@ -351,10 +357,7 @@ body {
 .monaco-workbench textarea:focus,
 .monaco-workbench input[type="search"]:focus,
 .monaco-workbench input[type="checkbox"]:focus {
-	outline-width: 1px;
-	outline-style: solid;
-	outline-offset: -1px;
-	outline-color: var(--vscode-focusBorder);
+	outline: none !important;
 	opacity: 1;
 }
 
@@ -393,12 +396,7 @@ body {
 	content: "";
 	pointer-events: none;
 	/* enable click through */
-	outline: 1px solid;
-	/* we still need to handle the empty tree or no focus item case */
-	outline-width: 1px;
-	outline-style: solid;
-	outline-offset: -1px;
-	outline-color: var(--vscode-focusBorder);
+	outline: none !important;
 }
 
 .monaco-workbench .monaco-list .monaco-list-row .monaco-highlighted-label .highlight {
@@ -445,7 +443,7 @@ body {
 }
 
 .monaco-workbench .monaco-action-bar:not(.vertical) .action-item .action-label:hover:not(.disabled) {
-	outline: 1px dashed var(--vscode-toolbar-hoverOutline);
+	outline: none !important;
 	outline-offset: -1px;
 }
 

@@ -117,17 +117,17 @@
 
 .monaco-sash.hover:before,
 .monaco-sash.active:before {
-	background: var(--vscode-sash-hoverBorder);
+	background: #4242429c !important;
 }
 
 .monaco-sash.vertical:before {
-	width: var(--vscode-sash-hover-size);
-	left: calc(50% - (var(--vscode-sash-hover-size) / 2));
+	width: 3px !important;
+	left: calc(50% - 0.5px);
 }
 
 .monaco-sash.horizontal:before {
-	height: var(--vscode-sash-hover-size);
-	top: calc(50% - (var(--vscode-sash-hover-size) / 2));
+	height: 3px !important;
+	top: calc(50% - 0.5px);
 }
 
 .pointer-events-disabled {
