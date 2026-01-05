@@ -9,6 +9,15 @@
 	outline: none !important;
 }
 
+/* Remove borders from file tree and list items */
+.monaco-workbench .monaco-list .monaco-list-row,
+.monaco-workbench .monaco-list .monaco-list-row.focused,
+.monaco-workbench .monaco-list .monaco-list-row.selected,
+.monaco-workbench .monaco-list .monaco-list-row:focus {
+	outline: none !important;
+	border: none !important;
+}
+
 /* Animations */
 
 @keyframes fadeIn {

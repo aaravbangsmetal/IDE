@@ -100,10 +100,8 @@
 }
 
 .monaco-workbench .explorer-folders-view .explorer-item .monaco-inputbox input[type="text"] {
-	outline-width: 1px;
-	outline-style: solid;
-	outline-offset: -1px;
-	outline-color: var(--vscode-focusBorder);
+	outline: none !important;
+	border: none !important;
 	opacity: 1;
 }
 
