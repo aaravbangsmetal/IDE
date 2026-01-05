@@ -10,6 +10,8 @@
 	top: 0;
 	box-sizing: border-box;
 	height: 100%;
+	background-color: #555555 !important;
+	border: none !important;
 }
 
 .monaco-editor .margin-view-overlays .current-line {
@@ -19,10 +21,23 @@
 	top: 0;
 	box-sizing: border-box;
 	height: 100%;
+	background-color: #4e4e4e46 !important;
+	border: none !important;
 }
 
 .monaco-editor
 	.margin-view-overlays
 	.current-line.current-line-margin.current-line-margin-both {
 	border-right: 0;
+}
+
+/* Override exact line borders */
+.monaco-editor .view-overlays .current-line-exact {
+	border: none !important;
+	background-color: #4e4e4e46 !important;
+}
+
+.monaco-editor .margin-view-overlays .current-line-exact-margin {
+	border: none !important;
+	background-color: #4e4e4e46 !important;
 }
