@@ -18,6 +18,33 @@
 	border: none !important;
 }
 
+/* Change list selection and hover backgrounds from blue to gray */
+.monaco-workbench .monaco-list .monaco-list-row.focused,
+.monaco-workbench .monaco-list .monaco-list-row.selected,
+.monaco-workbench .monaco-list:not(.drop-target) .monaco-list-row.focused,
+.monaco-workbench .monaco-list:not(.drop-target) .monaco-list-row.selected {
+	background-color: #3a3a3a !important;
+}
+
+.monaco-workbench .monaco-list .monaco-list-row:hover:not(.selected):not(.focused) {
+	background-color: #2a2a2a !important;
+}
+
+/* Change blue secondary text in lists to light gray #E3E3E3 */
+.monaco-workbench .monaco-list .monaco-list-row .label-description,
+.monaco-workbench .monaco-list .monaco-list-row .quick-input-list-label-meta,
+.monaco-workbench .monaco-list .monaco-list-row .monaco-highlighted-label .highlight,
+.monaco-workbench .quick-input-list .monaco-list-row [class*="label-meta"],
+.monaco-workbench .quick-input-list .monaco-list-row .quick-input-list-entry-meta,
+.monaco-workbench .monaco-list .monaco-list-row .codicon-link,
+.quick-input-list .quick-input-list-label-meta,
+.quick-input-list .monaco-list .monaco-list-row .monaco-highlighted-label .highlight,
+.quick-input-list .monaco-list .monaco-list-row.focused .monaco-highlighted-label .highlight,
+.monaco-icon-label > .monaco-icon-label-container > .monaco-icon-description-container > .label-description {
+	color: #E3E3E3 !important;
+	opacity: 1 !important;
+}
+
 /* Animations */
 
 @keyframes fadeIn {
