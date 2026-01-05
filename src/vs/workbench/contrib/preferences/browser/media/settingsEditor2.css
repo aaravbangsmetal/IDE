@@ -224,7 +224,7 @@
 }
 
 .settings-editor > .settings-body .settings-tree-container .settings-editor-tree > .monaco-scrollable-element > .shadow.top {
-	z-index: 11;
+	display: none !important;
 }
 
 .settings-editor > .settings-body .settings-tree-container .setting-toolbar-container {

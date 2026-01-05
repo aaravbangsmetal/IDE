@@ -154,8 +154,9 @@
 	position: absolute;
 	bottom: -3px;
 	left: 0px;
-	height: 0px; /* heigt is 3px and only set when there is a treeStickyScrollShadow color */
+	height: 0px !important;
 	width: 100%;
+	display: none !important;
 }
 
 .monaco-list .monaco-scrollable-element .monaco-tree-sticky-container[tabindex="0"]:focus{

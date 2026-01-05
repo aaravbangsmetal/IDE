@@ -26,7 +26,7 @@
 
 .monaco-component.diff-review .diff-review-shadow {
 	position: absolute;
-	box-shadow: var(--vscode-scrollbar-shadow) 0 -6px 6px -6px inset;
+	box-shadow: none;
 }
 
 .monaco-component.diff-review .diff-review-row {

@@ -74,9 +74,9 @@
 				color: var(--vscode-foreground);
 				background: var(--vscode-multiDiffEditor-headerBackground);
 
-				&.shadow {
-					box-shadow: var(--vscode-scrollbar-shadow) 0px 6px 6px -6px;
-				}
+			&.shadow {
+				box-shadow: none;
+			}
 
 				.file-path {
 					display: flex;

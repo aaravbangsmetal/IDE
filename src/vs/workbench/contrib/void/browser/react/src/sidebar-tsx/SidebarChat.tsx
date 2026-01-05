@@ -343,8 +343,7 @@ export const VoidChatArea: React.FC<VoidChatAreaProps> = ({
 			className={`
 				gap-x-1
                 flex flex-col relative input text-left shrink-0
-                rounded-lg
-                bg-void-bg-3
+                bg-[#1D1D1D]
 				transition-all duration-200
 				border border-[#3a3a3a]
 				max-h-[80vh] overflow-y-auto
@@ -352,8 +351,7 @@ export const VoidChatArea: React.FC<VoidChatAreaProps> = ({
             `}
 			style={{
 				padding: '10px 12px 12px 12px',
-				minHeight: '52px',
-				boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 0 0 1px rgba(0, 0, 0, 0.15)'
+				minHeight: '52px'
 			}}
 			onClick={(e) => {
 				onClickAnywhere?.()
@@ -3088,7 +3086,7 @@ export const SidebarChat = () => {
 	>
 		<VoidInputBox2
 			enableAtToMention
-			className={`min-h-[40px] px-0 py-0`}
+			className={`min-h-[20px] px-0 py-0`}
 			placeholder={`@ to mention, ${keybindingString ? `${keybindingString} to add a selection. ` : ''}Enter instructions...`}
 			onChangeText={onChangeText}
 			onKeyDown={onKeyDown}
