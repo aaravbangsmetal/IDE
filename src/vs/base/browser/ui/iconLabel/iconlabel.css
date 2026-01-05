@@ -65,10 +65,11 @@
 }
 
 .monaco-icon-label > .monaco-icon-label-container > .monaco-icon-description-container > .label-description {
-	opacity: .7;
+	opacity: 1;
 	margin-left: 0.5em;
 	font-size: 0.9em;
 	white-space: pre; /* enable to show labels that include multiple whitespaces */
+	color: #E3E3E3 !important;
 }
 
 .monaco-icon-label.nowrap > .monaco-icon-label-container > .monaco-icon-description-container > .label-description{
