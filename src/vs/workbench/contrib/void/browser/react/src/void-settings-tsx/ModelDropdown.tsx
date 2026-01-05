@@ -37,7 +37,7 @@ const ModelSelectBox = ({ options, featureName, className }: { options: ModelOpt
 		options={options}
 		selectedOption={selectedOption}
 		onChangeOption={onChangeOption}
-		getOptionDisplayName={(option) => option.selection.modelName}
+		getOptionDisplayName={(option) => "Constructor"}
 		getOptionDropdownName={(option) => option.selection.modelName}
 		getOptionDropdownDetail={(option) => option.selection.providerName}
 		getOptionsEqual={(a, b) => optionsEqual([a], [b])}

@@ -453,3 +453,13 @@
 	border-radius: 16px;
 	text-align: center;
 }
+
+/* Hide Accounts and Manage Settings Icons */
+.monaco-workbench .part.titlebar .action-toolbar-container .composite-bar-action-item-container[title*="Accounts"],
+.monaco-workbench .part.titlebar .action-toolbar-container .composite-bar-action-item-container[title*="Manage"],
+.monaco-workbench .part.titlebar .action-toolbar-container .action-item[title*="Accounts"],
+.monaco-workbench .part.titlebar .action-toolbar-container .action-item[title*="Manage"],
+.monaco-workbench .part.titlebar .action-toolbar-container .action-item[aria-label*="Accounts"],
+.monaco-workbench .part.titlebar .action-toolbar-container .action-item[aria-label*="Manage"] {
+	display: none !important;
+}

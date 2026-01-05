@@ -256,7 +256,7 @@ body {
 	font-size: 12px !important;
 	font-weight: 900;
 	margin-left: 4px !important;
-	text-shadow: 0.1px 0 0 currentColor, -0.1px 0 0 currentColor, 0 0.1px 0 currentColor, 0 -0.1px 0 currentColor;
+	text-shadow: 0.1px 0 0 currentColor, -0.1px 0 0 currentColor, 0 0.1px 0 currentColor, 0 -0.1px 0 currentColor !important;
 	color: #4b4b4b !important;
 }
 
@@ -265,7 +265,7 @@ body {
 	font-size: 12px !important;
 	font-weight: 900;
 	margin-left: 4px !important;
-	text-shadow: 0.1px 0 0 currentColor, -0.1px 0 0 currentColor, 0 0.1px 0 currentColor, 0 -0.1px 0 currentColor;
+	text-shadow: 0.1px 0 0 currentColor, -0.1px 0 0 currentColor, 0 0.1px 0 currentColor, 0 -0.1px 0 currentColor !important;
 }
 
 /* Search dropdown chevron */
@@ -273,7 +273,7 @@ body {
 .monaco-workbench .search-view .query-details .more .codicon {
 	font-size: 12px !important;
 	font-weight: 900;
-	text-shadow: 0.1px 0 0 currentColor, -0.1px 0 0 currentColor, 0 0.1px 0 currentColor, 0 -0.1px 0 currentColor;
+	text-shadow: 0.1px 0 0 currentColor, -0.1px 0 0 currentColor, 0 0.1px 0 currentColor, 0 -0.1px 0 currentColor !important;
 	color: #4b4b4b !important;
 }
 
