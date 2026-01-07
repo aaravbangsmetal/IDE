@@ -10,12 +10,12 @@ import { Color, RGBA } from '../../../../base/common/color.js';
 import { registerColor, oneOf } from '../colorUtils.js';
 
 // Import the colors we need
-import { editorWidgetBackground, editorWidgetForeground } from './editorColors.js';
+import { editorWidgetBackground, editorWidgetForeground, editorBackground } from './editorColors.js';
 import { listActiveSelectionBackground, listActiveSelectionForeground, listActiveSelectionIconForeground } from './listColors.js';
 
 
 export const quickInputBackground = registerColor('quickInput.background',
-	editorWidgetBackground,
+	{ dark: '#252526', light: '#F3F3F3', hcDark: Color.black, hcLight: Color.white },
 	nls.localize('pickerBackground', "Quick picker background color. The quick picker widget is the container for pickers like the command palette."));
 
 export const quickInputForeground = registerColor('quickInput.foreground',

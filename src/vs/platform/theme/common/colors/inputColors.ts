@@ -11,13 +11,13 @@ import { registerColor, transparent, lighten, darken } from '../colorUtils.js';
 
 // Import the colors we need
 import { foreground, contrastBorder, focusBorder, iconForeground } from './baseColors.js';
-import { editorWidgetBackground } from './editorColors.js';
+import { editorWidgetBackground, editorBackground, editorWidgetBorder } from './editorColors.js';
 
 
 // ----- input
 
 export const inputBackground = registerColor('input.background',
-	{ dark: '#3C3C3C', light: Color.white, hcDark: Color.black, hcLight: Color.white },
+	{ dark: '#252526', light: Color.white, hcDark: Color.black, hcLight: Color.white },
 	nls.localize('inputBoxBackground', "Input box background."));
 
 export const inputForeground = registerColor('input.foreground',
@@ -25,7 +25,7 @@ export const inputForeground = registerColor('input.foreground',
 	nls.localize('inputBoxForeground', "Input box foreground."));
 
 export const inputBorder = registerColor('input.border',
-	{ dark: null, light: null, hcDark: contrastBorder, hcLight: contrastBorder },
+	{ dark: '#454545', light: '#CECECE', hcDark: contrastBorder, hcLight: contrastBorder },
 	nls.localize('inputBoxBorder', "Input box border."));
 
 export const inputActiveOptionBorder = registerColor('inputOption.activeBorder',
