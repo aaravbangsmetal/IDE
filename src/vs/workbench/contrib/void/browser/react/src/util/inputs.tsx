@@ -1182,32 +1182,29 @@ export const VoidSwitch = ({
 		<label className="inline-flex items-center" {...props}>
 			<div
 				onClick={() => !disabled && onChange(!value)}
-				className={`
-			cursor-pointer
-			relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out
-			${value ? 'bg-zinc-900 dark:bg-white' : 'bg-white dark:bg-zinc-600'}
-			${disabled ? 'opacity-25' : ''}
-			${size === 'xxs' ? 'h-3 w-5' : ''}
-			${size === 'xs' ? 'h-4 w-7' : ''}
-			${size === 'sm' ? 'h-5 w-9' : ''}
-			${size === 'sm+' ? 'h-5 w-10' : ''}
-			${size === 'md' ? 'h-6 w-11' : ''}
-		  `}
+				style={{
+					width: '32px',
+					height: '18px',
+					backgroundColor: '#252525',
+					borderRadius: '9999px',
+					cursor: disabled ? 'not-allowed' : 'pointer',
+					opacity: disabled ? 0.25 : 1,
+					position: 'relative',
+					display: 'inline-flex',
+					alignItems: 'center',
+					transition: 'all 200ms ease-in-out'
+				}}
 			>
 				<span
-					className={`
-			  inline-block transform rounded-full bg-white dark:bg-zinc-900 shadow transition-transform duration-200 ease-in-out
-			  ${size === 'xxs' ? 'h-2 w-2' : ''}
-			  ${size === 'xs' ? 'h-2.5 w-2.5' : ''}
-			  ${size === 'sm' ? 'h-3 w-3' : ''}
-			  ${size === 'sm+' ? 'h-3.5 w-3.5' : ''}
-			  ${size === 'md' ? 'h-4 w-4' : ''}
-			  ${size === 'xxs' ? (value ? 'translate-x-2.5' : 'translate-x-0.5') : ''}
-			  ${size === 'xs' ? (value ? 'translate-x-3.5' : 'translate-x-0.5') : ''}
-			  ${size === 'sm' ? (value ? 'translate-x-5' : 'translate-x-1') : ''}
-			  ${size === 'sm+' ? (value ? 'translate-x-6' : 'translate-x-1') : ''}
-			  ${size === 'md' ? (value ? 'translate-x-6' : 'translate-x-1') : ''}
-			`}
+					style={{
+						width: '14px',
+						height: '14px',
+						backgroundColor: value ? '#D9D9D9' : '#4F4F4F',
+						borderRadius: '50%',
+						transform: value ? 'translateX(16px)' : 'translateX(2px)',
+						transition: 'all 200ms ease-in-out',
+						display: 'inline-block'
+					}}
 				/>
 			</div>
 		</label>

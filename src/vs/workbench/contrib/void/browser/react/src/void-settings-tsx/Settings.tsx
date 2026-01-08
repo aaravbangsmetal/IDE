@@ -1036,7 +1036,7 @@ const UserInfoSection = () => {
 
 	const [userEmail, setUserEmail] = useState('user@gmail.com');
 	const [userPlan, setUserPlan] = useState('Free');
-	const [initials, setInitials] = useState('US');
+	const [initials, setInitials] = useState('U');
 
 	useEffect(() => {
 		// Fetch user email from auth service
@@ -1044,16 +1044,10 @@ const UserInfoSection = () => {
 			if (authState.user?.email) {
 				setUserEmail(authState.user.email);
 
-				// Calculate initials from email
+				// Calculate initial (single letter) from email
 				const username = authState.user.email.split('@')[0];
-				const parts = username.split(/[._-]/);
-				let calculatedInitials = 'U';
-				if (parts.length >= 2) {
-					calculatedInitials = (parts[0][0] + parts[1][0]).toUpperCase();
-				} else {
-					calculatedInitials = username.slice(0, 2).toUpperCase();
-				}
-				setInitials(calculatedInitials);
+				const firstLetter = username[0] || 'U';
+				setInitials(firstLetter.toUpperCase());
 			}
 		});
 
@@ -1070,21 +1064,27 @@ const UserInfoSection = () => {
 		// Optionally reload or redirect after logout
 	};
 
+	const handleUpgrade = () => {
+		// TODO: Fetch upgrade URL from subscription service or config
+		// For now, this would open the upgrade/billing page
+		// commandService.executeCommand('void.openUpgrade');
+	};
+
 	return (
-		<div className="flex items-center justify-between" style={{ width: '518px', marginBottom: '16px' }}>
+		<div className="flex items-center justify-between" style={{ width: '100%', maxWidth: '585px', marginBottom: '16px' }}>
 			<div className="flex items-center gap-3">
-				<div style={{ width: '44px', height: '44px', backgroundColor: '#2563eb', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '16px', fontWeight: '600' }}>
+				<div style={{ width: '38px', height: '38px', backgroundColor: '#1D1D1D', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#898989', fontSize: '15px', fontWeight: '600' }}>
 					{initials}
 				</div>
 				<div>
-					<div style={{ color: '#D9D9D9', fontSize: '12px' }}>{userEmail}</div>
+					<div style={{ color: '#D9D9D9', fontSize: '14px' }}>{userEmail}</div>
 					<div style={{ color: '#8B8B8B', fontSize: '12px' }}>
-						{userPlan} · <span style={{ color: '#60a5fa', cursor: 'pointer' }}>Upgrade ↗</span>
+						{userPlan} · <span style={{ color: '#898989', cursor: 'pointer' }} onClick={handleUpgrade}>Upgrade ↗</span>
 					</div>
 				</div>
 			</div>
 			<button
-				style={{ backgroundColor: '#252525', width: '157px', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '12px' }}
+				style={{ backgroundColor: 'transparent', border: '1px solid #252525', width: '75px', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '13px' }}
 				className="flex items-center justify-center"
 				onClick={handleLogout}
 			>
@@ -1189,9 +1189,9 @@ export const Settings = () => {
 
 
 	return (
-		<div className={`@@void-scope ${isDark ? 'dark' : ''}`} style={{ height: '100%', width: '100%', overflow: 'auto' }}>
+		<div className={`@@void-scope ${isDark ? 'dark' : ''}`} style={{ height: '100%', width: '100%', overflow: 'auto', display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
 			{/* SIMPLIFIED SINGLE-PAGE SETTINGS LAYOUT */}
-			<div className="flex flex-col w-full max-w-[900px] mx-auto mb-32 px-6" style={{ minHeight: '80vh' }}>
+			<div className="flex flex-col mb-32" style={{ minHeight: '80vh', width: '100%', maxWidth: '585px', minWidth: '518px', paddingTop: '24px', margin: '0 auto' }}>
 				{/* ──────────────  COMMENTED OUT: SIDEBAR  ────────────── */}
 				{/* <aside className="md:w-1/4 w-full p-6 shrink-0">
 					<div className="flex flex-col gap-2 mt-12">
@@ -1224,145 +1224,166 @@ export const Settings = () => {
 					</ErrorBoundary>
 
 					{/* ═══════════ SIMPLIFIED SECTIONS ═══════════ */}
-					<div className='flex flex-col' style={{ gap: '12px' }}>
+					<div className='flex flex-col' style={{ gap: '6px' }}>
 
-							{/* ─────── MANAGE ACCOUNT SECTION ─────── */}
-							<ErrorBoundary>
-								<div style={{ backgroundColor: '#1A1A1A', width: '518px', height: '61px', borderRadius: '10px' }} className="px-6 flex items-center justify-between">
-									<div>
-										<h2 style={{ color: '#D9D9D9', fontSize: '12px' }} className="mb-1">Manage Account</h2>
-										<div style={{ color: '#8B8B8B', fontSize: '12px' }}>Manage your account and billing</div>
-									</div>
-									<button
-										style={{ backgroundColor: '#252525', width: '157px', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '12px' }}
-										className="flex items-center justify-center"
-										onClick={() => { commandService.executeCommand('workbench.action.openSettings') }}
-									>
-										Open ↗
-									</button>
+					{/* ─────── MANAGE ACCOUNT SECTION ─────── */}
+					<ErrorBoundary>
+						<div style={{ backgroundColor: '#1A1A1A', width: '100%', maxWidth: '585px', minHeight: '61px', borderRadius: '10px', padding: '16px 24px' }} className="flex items-center justify-between">
+								<div>
+									<h2 style={{ color: '#D9D9D9', fontSize: '13px', marginBottom: '2px' }}>Manage Account</h2>
+									<div style={{ color: '#8B8B8B', fontSize: '13px' }}>Manage your account and billing</div>
 								</div>
-							</ErrorBoundary>
+								<button
+									style={{ backgroundColor: '#252525', width: '157px', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '13px' }}
+									className="flex items-center justify-center"
+									onClick={() => {
+										// TODO: Fetch account management URL from service
+										// For now, open standard settings
+										commandService.executeCommand('workbench.action.openSettings');
+									}}
+								>
+									Open ↗
+								</button>
+							</div>
+						</ErrorBoundary>
 
-							{/* ─────── REASONING TOGGLE ─────── */}
-							<ErrorBoundary>
-								<div style={{ backgroundColor: '#1A1A1A', width: '518px', height: '61px', borderRadius: '10px' }} className="px-6">
-									<div className="flex items-center justify-between h-full">
-										<div>
-											<h2 style={{ color: '#D9D9D9', fontSize: '12px' }} className="mb-1">Reasoning</h2>
-											<div style={{ color: '#8B8B8B', fontSize: '12px' }}>Allow the reasoning model to take action</div>
+					{/* ─────── REASONING TOGGLE ─────── */}
+					<ErrorBoundary>
+						<div style={{ backgroundColor: '#1A1A1A', width: '100%', maxWidth: '585px', minHeight: '61px', borderRadius: '10px', padding: '16px 24px' }} className="flex items-center justify-between">
+							<div>
+								<h2 style={{ color: '#D9D9D9', fontSize: '13px', marginBottom: '2px' }}>Reasoning</h2>
+								<div style={{ color: '#8B8B8B', fontSize: '13px' }}>Allow the reasoning model to take action</div>
+							</div>
+							<VoidSwitch
+								size='md'
+								value={settingsState.globalSettings.enableReasoning ?? false}
+								onChange={(newVal) => voidSettingsService.setGlobalSetting('enableReasoning' as any, newVal)}
+							/>
+						</div>
+					</ErrorBoundary>
+
+					{/* ─────── TOOLS SECTION ─────── */}
+					<ErrorBoundary>
+						<div style={{ backgroundColor: '#1A1A1A', width: '100%', maxWidth: '585px', borderRadius: '10px', padding: '16px 24px' }}>
+								<h2 style={{ color: '#D9D9D9', fontSize: '13px', marginBottom: '2px' }}>Tools</h2>
+								<div style={{ color: '#8B8B8B', fontSize: '13px', marginBottom: '12px' }}>Tools are functions that LLMs can call</div>
+								<div className="flex flex-col" style={{ gap: '13px' }}>
+									{[...toolApprovalTypes].map((approvalType) => (
+										<div key={approvalType} className="flex items-center justify-between">
+											<span style={{ color: '#D9D9D9', fontSize: '13px' }}>{`Auto-approve ${approvalType}`}</span>
+											<VoidSwitch
+												size='md'
+												value={settingsState.globalSettings.autoApprove[approvalType] ?? false}
+												onChange={(newVal) => {
+													const currentAutoApprove = settingsState.globalSettings.autoApprove ?? {}
+													voidSettingsService.setGlobalSetting('autoApprove', { ...currentAutoApprove, [approvalType]: newVal })
+												}}
+											/>
 										</div>
+									))}
+									<div className="flex items-center justify-between">
+										<span style={{ color: '#D9D9D9', fontSize: '13px' }}>Fix lint errors</span>
 										<VoidSwitch
 											size='md'
-											value={settingsState.globalSettings.enableReasoning ?? false}
-											onChange={(newVal) => voidSettingsService.setGlobalSetting('enableReasoning' as any, newVal)}
+											value={settingsState.globalSettings.includeToolLintErrors}
+											onChange={(newVal) => voidSettingsService.setGlobalSetting('includeToolLintErrors', newVal)}
+										/>
+									</div>
+									<div className="flex items-center justify-between">
+										<span style={{ color: '#D9D9D9', fontSize: '13px' }}>Auto-accept LLM changes</span>
+										<VoidSwitch
+											size='md'
+											value={settingsState.globalSettings.autoAcceptLLMChanges}
+											onChange={(newVal) => voidSettingsService.setGlobalSetting('autoAcceptLLMChanges', newVal)}
 										/>
 									</div>
 								</div>
-							</ErrorBoundary>
+							</div>
+						</ErrorBoundary>
 
-							{/* ─────── TOOLS SECTION ─────── */}
-							<ErrorBoundary>
-								<div style={{ backgroundColor: '#1A1A1A', width: '518px', borderRadius: '10px' }} className="px-6 py-4">
-									<h2 style={{ color: '#D9D9D9', fontSize: '12px' }} className="mb-1">Tools</h2>
-									<div style={{ color: '#8B8B8B', fontSize: '12px' }} className="mb-4">Tools are functions that LLMs can call</div>
-									<div className="flex flex-col gap-3">
-										{[...toolApprovalTypes].map((approvalType) => (
-											<div key={approvalType} className="flex items-center justify-between">
-												<span style={{ color: '#D9D9D9', fontSize: '12px' }}>{`Auto-approve ${approvalType}`}</span>
-												<VoidSwitch
-													size='md'
-													value={settingsState.globalSettings.autoApprove[approvalType] ?? false}
-													onChange={(newVal) => {
-														const currentAutoApprove = settingsState.globalSettings.autoApprove ?? {}
-														voidSettingsService.setGlobalSetting('autoApprove', { ...currentAutoApprove, [approvalType]: newVal })
-													}}
-												/>
-											</div>
-										))}
-										<div className="flex items-center justify-between">
-											<span style={{ color: '#D9D9D9', fontSize: '12px' }}>Fix lint errors</span>
-											<VoidSwitch
-												size='md'
-												value={settingsState.globalSettings.includeToolLintErrors}
-												onChange={(newVal) => voidSettingsService.setGlobalSetting('includeToolLintErrors', newVal)}
-											/>
-										</div>
-										<div className="flex items-center justify-between">
-											<span style={{ color: '#D9D9D9', fontSize: '12px' }}>Auto-accept LLM changes</span>
-											<VoidSwitch
-												size='md'
-												value={settingsState.globalSettings.autoAcceptLLMChanges}
-												onChange={(newVal) => voidSettingsService.setGlobalSetting('autoAcceptLLMChanges', newVal)}
-											/>
-										</div>
-									</div>
+					{/* ─────── INSTRUCTIONS SECTION ─────── */}
+					<ErrorBoundary>
+						<div style={{ backgroundColor: '#1A1A1A', width: '100%', maxWidth: '585px', borderRadius: '10px', padding: '16px 24px' }}>
+							<div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
+								<div>
+									<h2 style={{ color: '#D9D9D9', fontSize: '13px', marginBottom: '2px' }}>Instructions</h2>
+									<div style={{ color: '#8B8B8B', fontSize: '13px' }}>System instructions to include with all AI requests</div>
 								</div>
-							</ErrorBoundary>
+								<VoidSwitch
+									size='md'
+									value={!settingsState.globalSettings.disableSystemMessage}
+									onChange={(newVal) => voidSettingsService.setGlobalSetting('disableSystemMessage', !newVal)}
+								/>
+							</div>
+							<textarea
+								value={settingsState.globalSettings.aiInstructions || ''}
+								onChange={(e) => voidSettingsService.setGlobalSetting('aiInstructions', e.target.value)}
+								placeholder=""
+								style={{
+									width: '100%',
+									maxWidth: '537px',
+									height: '69px',
+									borderRadius: '13px',
+									border: '1px solid #252525',
+									backgroundColor: 'transparent',
+									color: '#8B8B8B',
+									fontSize: '12px',
+									padding: '16px 24px',
+									resize: 'none',
+									outline: 'none',
+									overflow: 'auto',
+									lineHeight: '1.5'
+								}}
+							/>
+						</div>
+					</ErrorBoundary>
 
-							{/* ─────── INSTRUCTIONS SECTION ─────── */}
-							<ErrorBoundary>
-								<div style={{ backgroundColor: '#1A1A1A', width: '518px', borderRadius: '10px' }} className="px-6 py-4">
-									<div className="flex items-center justify-between mb-4">
-										<div>
-											<h2 style={{ color: '#D9D9D9', fontSize: '12px' }} className="mb-1">Instructions</h2>
-											<div style={{ color: '#8B8B8B', fontSize: '12px' }}>System instructions to include with all AI requests</div>
-										</div>
-										<VoidSwitch
-											size='md'
-											value={!settingsState.globalSettings.disableSystemMessage}
-											onChange={(newVal) => voidSettingsService.setGlobalSetting('disableSystemMessage', !newVal)}
-										/>
-									</div>
-									<AIInstructionsBox />
-								</div>
-							</ErrorBoundary>
+					{/* ─────── MCP SECTION ─────── */}
+					<ErrorBoundary>
+						<div style={{ backgroundColor: '#1A1A1A', width: '100%', maxWidth: '585px', minHeight: '61px', borderRadius: '10px', padding: '16px 24px' }} className="flex items-center justify-between">
+							<div>
+								<h2 style={{ color: '#D9D9D9', fontSize: '13px', marginBottom: '2px' }}>MCP</h2>
+								<div style={{ color: '#8B8B8B', fontSize: '13px' }}>Use MCPs to provide agent with more tools</div>
+							</div>
+							<button
+								style={{ backgroundColor: '#252525', width: '157px', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '13px' }}
+								className="flex items-center justify-center"
+								onClick={async () => { await mcpService.revealMCPConfigFile() }}
+							>
+								Connect
+							</button>
+						</div>
+					</ErrorBoundary>
 
-							{/* ─────── MCP SECTION ─────── */}
-							<ErrorBoundary>
-								<div style={{ backgroundColor: '#1A1A1A', width: '518px', height: '61px', borderRadius: '10px' }} className="px-6 flex items-center justify-between">
-									<div>
-										<h2 style={{ color: '#D9D9D9', fontSize: '12px' }} className="mb-1">MCP</h2>
-										<div style={{ color: '#8B8B8B', fontSize: '12px' }}>Use MCPs to provide agent with more tools</div>
-									</div>
-									<button
-										style={{ backgroundColor: '#252525', width: '157px', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '12px' }}
-										className="flex items-center justify-center"
-										onClick={async () => { await mcpService.revealMCPConfigFile() }}
-									>
-										Connect
-									</button>
-								</div>
-							</ErrorBoundary>
+					{/* ─────── EDITOR SETTINGS SECTION ─────── */}
+					<ErrorBoundary>
+						<div style={{ backgroundColor: '#1A1A1A', width: '100%', maxWidth: '585px', minHeight: '61px', borderRadius: '10px', padding: '16px 24px' }} className="flex items-center justify-between">
+							<div>
+								<h2 style={{ color: '#D9D9D9', fontSize: '13px', marginBottom: '2px' }}>Editor settings</h2>
+								<div style={{ color: '#8B8B8B', fontSize: '13px' }}>Personalise your flow with the editor</div>
+							</div>
+							<button
+								style={{ backgroundColor: '#252525', width: '157px', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '13px' }}
+								className="flex items-center justify-center"
+								onClick={() => { commandService.executeCommand('workbench.action.openSettings') }}
+							>
+								Open
+							</button>
+						</div>
+					</ErrorBoundary>
 
-							{/* ─────── EDITOR SETTINGS SECTION ─────── */}
-							<ErrorBoundary>
-								<div style={{ backgroundColor: '#1A1A1A', width: '518px', height: '61px', borderRadius: '10px' }} className="px-6 flex items-center justify-between">
-									<div>
-										<h2 style={{ color: '#D9D9D9', fontSize: '12px' }} className="mb-1">Editor settings</h2>
-										<div style={{ color: '#8B8B8B', fontSize: '12px' }}>Personalise your flow with the editor</div>
-									</div>
-									<button
-										style={{ backgroundColor: '#252525', width: '157px', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '12px' }}
-										className="flex items-center justify-center"
-										onClick={() => { commandService.executeCommand('workbench.action.openSettings') }}
-									>
-										Open
-									</button>
+						{/* ─────── FAST SWITCH SECTION ─────── */}
+						<ErrorBoundary>
+							<div style={{ backgroundColor: '#1A1A1A', width: '100%', maxWidth: '585px', borderRadius: '10px', padding: '16px 24px' }}>
+								<h2 style={{ color: '#D9D9D9', fontSize: '13px', marginBottom: '2px' }}>Fast switch</h2>
+								<div style={{ color: '#8B8B8B', fontSize: '13px', marginBottom: '12px' }}>Transfer your editor settings</div>
+								<div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+									<button style={{ backgroundColor: '#252525', flex: '1', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>VS Code</button>
+									<button style={{ backgroundColor: '#252525', flex: '1', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>Cursor</button>
+									<button style={{ backgroundColor: '#252525', flex: '1', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>Windsurf</button>
 								</div>
-							</ErrorBoundary>
-
-							{/* ─────── FAST SWITCH SECTION ─────── */}
-							<ErrorBoundary>
-								<div style={{ backgroundColor: '#1A1A1A', width: '518px', borderRadius: '10px' }} className="px-6 py-4">
-									<h2 style={{ color: '#D9D9D9', fontSize: '12px' }} className="mb-1">Fast switch</h2>
-									<div style={{ color: '#8B8B8B', fontSize: '12px' }} className="mb-4">Transfer your editor settings</div>
-									<div className="flex gap-4">
-										<OneClickSwitchButton className="flex-1" fromEditor="VS Code" />
-										<OneClickSwitchButton className="flex-1" fromEditor="Cursor" />
-										<OneClickSwitchButton className="flex-1" fromEditor="Windsurf" />
-									</div>
-								</div>
-							</ErrorBoundary>
+							</div>
+						</ErrorBoundary>
 
 							{/* ═══════════ ALL OTHER SECTIONS REMOVED FOR SIMPLIFIED LAYOUT ═══════════ */}
 							{/*
