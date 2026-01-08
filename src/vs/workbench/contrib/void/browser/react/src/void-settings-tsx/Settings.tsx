@@ -1029,46 +1029,67 @@ const MCPServersList = () => {
 	return <div className="my-2">{content}</div>
 };
 
-const UserInfoSection = ({ nativeHostService, environmentService }: { nativeHostService: any, environmentService: any }) => {
-	// TODO: Replace with actual user service/auth that provides email and subscription plan
-	// For now, using a placeholder that can be customized
-	const getUserEmail = (): string => {
-		// You can integrate with your auth service here
-		// Example: return authService.getUserEmail();
-		return 'user@gmail.com'; // Default placeholder
+const UserInfoSection = () => {
+	const accessor = useAccessor();
+	const napAuthService = accessor.get('INapAuthService');
+	const napSubscriptionService = accessor.get('INapSubscriptionService');
+
+	const [userEmail, setUserEmail] = useState('user@gmail.com');
+	const [userPlan, setUserPlan] = useState('Free');
+	const [initials, setInitials] = useState('US');
+
+	useEffect(() => {
+		// Fetch user email from auth service
+		napAuthService.getAuthState().then(authState => {
+			if (authState.user?.email) {
+				setUserEmail(authState.user.email);
+
+				// Calculate initials from email
+				const username = authState.user.email.split('@')[0];
+				const parts = username.split(/[._-]/);
+				let calculatedInitials = 'U';
+				if (parts.length >= 2) {
+					calculatedInitials = (parts[0][0] + parts[1][0]).toUpperCase();
+				} else {
+					calculatedInitials = username.slice(0, 2).toUpperCase();
+				}
+				setInitials(calculatedInitials);
+			}
+		});
+
+		// Fetch user plan from subscription service
+		napSubscriptionService.getSubscription().then(response => {
+			if (response.success && response.subscription) {
+				setUserPlan(response.subscription.planName || 'Free');
+			}
+		});
+	}, [napAuthService, napSubscriptionService]);
+
+	const handleLogout = async () => {
+		await napAuthService.logout();
+		// Optionally reload or redirect after logout
 	};
-
-	const userEmail = getUserEmail();
-	const userPlan = 'Free'; // TODO: Fetch from subscription service (Free/Pro/Enterprise)
-
-	// Calculate initials from email
-	const getInitials = (email: string): string => {
-		const username = email.split('@')[0];
-		const parts = username.split(/[._-]/);
-		if (parts.length >= 2) {
-			return (parts[0][0] + parts[1][0]).toUpperCase();
-		}
-		return username.slice(0, 2).toUpperCase();
-	};
-
-	const initials = getInitials(userEmail);
 
 	return (
-		<div className="flex items-center justify-between mb-8">
-			<div className="flex items-center gap-4">
-				<div className="w-12 h-12 rounded-full bg-void-bg-2 flex items-center justify-center text-xl font-semibold">
+		<div className="flex items-center justify-between" style={{ width: '518px', marginBottom: '16px' }}>
+			<div className="flex items-center gap-3">
+				<div style={{ width: '44px', height: '44px', backgroundColor: '#2563eb', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '16px', fontWeight: '600' }}>
 					{initials}
 				</div>
 				<div>
-					<div className="text-base text-void-fg-1">{userEmail}</div>
-					<div className="text-sm text-void-fg-3">
-						{userPlan} · <span className="text-blue-400 cursor-pointer hover:underline">Upgrade ↗</span>
+					<div style={{ color: '#D9D9D9', fontSize: '12px' }}>{userEmail}</div>
+					<div style={{ color: '#8B8B8B', fontSize: '12px' }}>
+						{userPlan} · <span style={{ color: '#60a5fa', cursor: 'pointer' }}>Upgrade ↗</span>
 					</div>
 				</div>
 			</div>
-			<VoidButtonBgDarken className="px-6 py-2 rounded" onClick={() => { /* TODO: Implement logout functionality */ }}>
+			<button
+				style={{ backgroundColor: '#252525', width: '157px', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '12px' }}
+				className="flex items-center justify-center"
+				onClick={handleLogout}
+			>
 				Logout
-			</VoidButtonBgDarken>
+			</button>
 		</div>
 	);
 };
@@ -1197,16 +1218,13 @@ export const Settings = () => {
 				<main className="flex-1 py-12 select-none">
 					<div className='max-w-3xl'>
 
-						{/* ═══════════ USER INFO SECTION ═══════════ */}
-						<ErrorBoundary>
-							<UserInfoSection
-								nativeHostService={nativeHostService}
-								environmentService={environmentService}
-							/>
-						</ErrorBoundary>
+					{/* ═══════════ USER INFO SECTION ═══════════ */}
+					<ErrorBoundary>
+						<UserInfoSection />
+					</ErrorBoundary>
 
-						{/* ═══════════ SIMPLIFIED SECTIONS ═══════════ */}
-						<div className='flex flex-col gap-6'>
+					{/* ═══════════ SIMPLIFIED SECTIONS ═══════════ */}
+					<div className='flex flex-col' style={{ gap: '12px' }}>
 
 							{/* ─────── MANAGE ACCOUNT SECTION ─────── */}
 							<ErrorBoundary>
