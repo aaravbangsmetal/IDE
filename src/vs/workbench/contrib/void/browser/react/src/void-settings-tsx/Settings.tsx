@@ -1189,9 +1189,9 @@ export const Settings = () => {
 
 
 	return (
-		<div className={`@@void-scope ${isDark ? 'dark' : ''}`} style={{ height: '100%', width: '100%', overflow: 'auto', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: '0 24px' }}>
+		<div className={`@@void-scope ${isDark ? 'dark' : ''}`} style={{ height: '100%', width: '100%', overflow: 'auto', display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
 			{/* SIMPLIFIED SINGLE-PAGE SETTINGS LAYOUT */}
-			<div className="flex flex-col mb-32" style={{ minHeight: '80vh', width: '100%', maxWidth: '585px', minWidth: '518px', paddingTop: '24px' }}>
+			<div className="flex flex-col mb-32" style={{ minHeight: '80vh', width: '100%', maxWidth: '585px', minWidth: '518px', paddingTop: '24px', margin: '0 auto' }}>
 				{/* ──────────────  COMMENTED OUT: SIDEBAR  ────────────── */}
 				{/* <aside className="md:w-1/4 w-full p-6 shrink-0">
 					<div className="flex flex-col gap-2 mt-12">
@@ -1322,15 +1322,17 @@ export const Settings = () => {
 								style={{
 									width: '100%',
 									maxWidth: '537px',
-									height: '55px',
-									borderRadius: '15px',
+									height: '69px',
+									borderRadius: '13px',
 									border: '1px solid #252525',
 									backgroundColor: 'transparent',
 									color: '#8B8B8B',
 									fontSize: '12px',
 									padding: '16px 24px',
 									resize: 'none',
-									outline: 'none'
+									outline: 'none',
+									overflow: 'auto',
+									lineHeight: '1.5'
 								}}
 							/>
 						</div>
@@ -1370,15 +1372,15 @@ export const Settings = () => {
 						</div>
 					</ErrorBoundary>
 
-					{/* ─────── FAST SWITCH SECTION ─────── */}
-					<ErrorBoundary>
-						<div style={{ backgroundColor: '#1A1A1A', width: '100%', maxWidth: '585px', borderRadius: '10px', padding: '16px 24px' }}>
+						{/* ─────── FAST SWITCH SECTION ─────── */}
+						<ErrorBoundary>
+							<div style={{ backgroundColor: '#1A1A1A', width: '100%', maxWidth: '585px', borderRadius: '10px', padding: '16px 24px' }}>
 								<h2 style={{ color: '#D9D9D9', fontSize: '13px', marginBottom: '2px' }}>Fast switch</h2>
 								<div style={{ color: '#8B8B8B', fontSize: '13px', marginBottom: '12px' }}>Transfer your editor settings</div>
-								<div className="flex gap-4">
-									<button style={{ backgroundColor: '#252525', width: '157px', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '13px' }} className="flex items-center justify-center">VS Code</button>
-									<button style={{ backgroundColor: '#252525', width: '157px', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '13px' }} className="flex items-center justify-center">Cursor</button>
-									<button style={{ backgroundColor: '#252525', width: '157px', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '13px' }} className="flex items-center justify-center">Windsurf</button>
+								<div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+									<button style={{ backgroundColor: '#252525', flex: '1', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>VS Code</button>
+									<button style={{ backgroundColor: '#252525', flex: '1', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>Cursor</button>
+									<button style={{ backgroundColor: '#252525', flex: '1', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>Windsurf</button>
 								</div>
 							</div>
 						</ErrorBoundary>
