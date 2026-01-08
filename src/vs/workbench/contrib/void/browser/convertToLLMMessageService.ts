@@ -691,9 +691,10 @@ class ConvertToLLMMessageService extends Disposable implements IConvertToLLMMess
 			supportsSystemMessage,
 		} = getModelCapabilities(providerName, modelName, overridesOfModel)
 
-		const { disableSystemMessage } = this.voidSettingsService.state.globalSettings;
+		// IMPORTANT: System message is ALWAYS enabled - never disable it!
+		// const { disableSystemMessage } = this.voidSettingsService.state.globalSettings;
 		const fullSystemMessage = await this._generateChatMessagesSystemMessage(chatMode, specialToolFormat)
-		const systemMessage = disableSystemMessage ? '' : fullSystemMessage;
+		const systemMessage = fullSystemMessage; // Always use full system message
 
 		const modelSelectionOptions = this.voidSettingsService.state.optionsOfModelSelection['Chat'][modelSelection.providerName]?.[modelSelection.modelName]
 
