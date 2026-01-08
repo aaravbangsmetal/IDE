@@ -1029,6 +1029,71 @@ const MCPServersList = () => {
 	return <div className="my-2">{content}</div>
 };
 
+const UserInfoSection = () => {
+	const accessor = useAccessor();
+	const napAuthService = accessor.get('INapAuthService');
+	const napSubscriptionService = accessor.get('INapSubscriptionService');
+
+	const [userEmail, setUserEmail] = useState('user@gmail.com');
+	const [userPlan, setUserPlan] = useState('Free');
+	const [initials, setInitials] = useState('US');
+
+	useEffect(() => {
+		// Fetch user email from auth service
+		napAuthService.getAuthState().then(authState => {
+			if (authState.user?.email) {
+				setUserEmail(authState.user.email);
+
+				// Calculate initials from email
+				const username = authState.user.email.split('@')[0];
+				const parts = username.split(/[._-]/);
+				let calculatedInitials = 'U';
+				if (parts.length >= 2) {
+					calculatedInitials = (parts[0][0] + parts[1][0]).toUpperCase();
+				} else {
+					calculatedInitials = username.slice(0, 2).toUpperCase();
+				}
+				setInitials(calculatedInitials);
+			}
+		});
+
+		// Fetch user plan from subscription service
+		napSubscriptionService.getSubscription().then(response => {
+			if (response.success && response.subscription) {
+				setUserPlan(response.subscription.planName || 'Free');
+			}
+		});
+	}, [napAuthService, napSubscriptionService]);
+
+	const handleLogout = async () => {
+		await napAuthService.logout();
+		// Optionally reload or redirect after logout
+	};
+
+	return (
+		<div className="flex items-center justify-between" style={{ width: '518px', marginBottom: '16px' }}>
+			<div className="flex items-center gap-3">
+				<div style={{ width: '44px', height: '44px', backgroundColor: '#2563eb', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '16px', fontWeight: '600' }}>
+					{initials}
+				</div>
+				<div>
+					<div style={{ color: '#D9D9D9', fontSize: '12px' }}>{userEmail}</div>
+					<div style={{ color: '#8B8B8B', fontSize: '12px' }}>
+						{userPlan} · <span style={{ color: '#60a5fa', cursor: 'pointer' }}>Upgrade ↗</span>
+					</div>
+				</div>
+			</div>
+			<button
+				style={{ backgroundColor: '#252525', width: '157px', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '12px' }}
+				className="flex items-center justify-center"
+				onClick={handleLogout}
+			>
+				Logout
+			</button>
+		</div>
+	);
+};
+
 export const Settings = () => {
 	const isDark = useIsDark()
 	const accessor = useAccessor()
@@ -1153,43 +1218,38 @@ export const Settings = () => {
 				<main className="flex-1 py-12 select-none">
 					<div className='max-w-3xl'>
 
-						{/* ═══════════ USER INFO SECTION ═══════════ */}
-						<div className="flex items-center justify-between mb-12">
-							<div className="flex items-center gap-4">
-								<div className="w-12 h-12 rounded-full bg-void-bg-2 flex items-center justify-center text-xl font-semibold">
-									S
-								</div>
-								<div>
-									<div className="text-base">surfers@bot.com</div>
-									<div className="text-sm text-void-fg-3">Free · <span className="text-blue-400 cursor-pointer hover:underline">Upgrade ↗</span></div>
-								</div>
-							</div>
-							<VoidButtonBgDarken className="px-6 py-2" onClick={() => { /* TODO: Implement logout functionality */ }}>
-								Logout
-							</VoidButtonBgDarken>
-						</div>
+					{/* ═══════════ USER INFO SECTION ═══════════ */}
+					<ErrorBoundary>
+						<UserInfoSection />
+					</ErrorBoundary>
 
-						{/* ═══════════ SIMPLIFIED SECTIONS ═══════════ */}
-						<div className='flex flex-col gap-8'>
+					{/* ═══════════ SIMPLIFIED SECTIONS ═══════════ */}
+					<div className='flex flex-col' style={{ gap: '12px' }}>
 
 							{/* ─────── MANAGE ACCOUNT SECTION ─────── */}
 							<ErrorBoundary>
-								<div className="border-b border-void-border-4 pb-6">
-									<h2 className="text-xl mb-1">Manage Account</h2>
-									<div className="text-sm text-void-fg-3 mb-4">Manage your account and billing</div>
-									<VoidButtonBgDarken className="px-6 py-2" onClick={() => { commandService.executeCommand('workbench.action.openSettings') }}>
+								<div style={{ backgroundColor: '#1A1A1A', width: '518px', height: '61px', borderRadius: '10px' }} className="px-6 flex items-center justify-between">
+									<div>
+										<h2 style={{ color: '#D9D9D9', fontSize: '12px' }} className="mb-1">Manage Account</h2>
+										<div style={{ color: '#8B8B8B', fontSize: '12px' }}>Manage your account and billing</div>
+									</div>
+									<button
+										style={{ backgroundColor: '#252525', width: '157px', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '12px' }}
+										className="flex items-center justify-center"
+										onClick={() => { commandService.executeCommand('workbench.action.openSettings') }}
+									>
 										Open ↗
-									</VoidButtonBgDarken>
+									</button>
 								</div>
 							</ErrorBoundary>
 
 							{/* ─────── REASONING TOGGLE ─────── */}
 							<ErrorBoundary>
-								<div className="border-b border-void-border-4 pb-6">
-									<div className="flex items-center justify-between">
+								<div style={{ backgroundColor: '#1A1A1A', width: '518px', height: '61px', borderRadius: '10px' }} className="px-6">
+									<div className="flex items-center justify-between h-full">
 										<div>
-											<h2 className="text-xl mb-1">Reasoning</h2>
-											<div className="text-sm text-void-fg-3">Allow the reasoning model to take action</div>
+											<h2 style={{ color: '#D9D9D9', fontSize: '12px' }} className="mb-1">Reasoning</h2>
+											<div style={{ color: '#8B8B8B', fontSize: '12px' }}>Allow the reasoning model to take action</div>
 										</div>
 										<VoidSwitch
 											size='md'
@@ -1202,13 +1262,13 @@ export const Settings = () => {
 
 							{/* ─────── TOOLS SECTION ─────── */}
 							<ErrorBoundary>
-								<div className="border-b border-void-border-4 pb-6">
-									<h2 className="text-xl mb-1">Tools</h2>
-									<div className="text-sm text-void-fg-3 mb-4">Tools are functions that LLMs can call</div>
+								<div style={{ backgroundColor: '#1A1A1A', width: '518px', borderRadius: '10px' }} className="px-6 py-4">
+									<h2 style={{ color: '#D9D9D9', fontSize: '12px' }} className="mb-1">Tools</h2>
+									<div style={{ color: '#8B8B8B', fontSize: '12px' }} className="mb-4">Tools are functions that LLMs can call</div>
 									<div className="flex flex-col gap-3">
 										{[...toolApprovalTypes].map((approvalType) => (
 											<div key={approvalType} className="flex items-center justify-between">
-												<span className="text-sm text-void-fg-2">{`Auto-approve ${approvalType}`}</span>
+												<span style={{ color: '#D9D9D9', fontSize: '12px' }}>{`Auto-approve ${approvalType}`}</span>
 												<VoidSwitch
 													size='md'
 													value={settingsState.globalSettings.autoApprove[approvalType] ?? false}
@@ -1220,7 +1280,7 @@ export const Settings = () => {
 											</div>
 										))}
 										<div className="flex items-center justify-between">
-											<span className="text-sm text-void-fg-2">Fix lint errors</span>
+											<span style={{ color: '#D9D9D9', fontSize: '12px' }}>Fix lint errors</span>
 											<VoidSwitch
 												size='md'
 												value={settingsState.globalSettings.includeToolLintErrors}
@@ -1228,7 +1288,7 @@ export const Settings = () => {
 											/>
 										</div>
 										<div className="flex items-center justify-between">
-											<span className="text-sm text-void-fg-2">Auto-accept LLM changes</span>
+											<span style={{ color: '#D9D9D9', fontSize: '12px' }}>Auto-accept LLM changes</span>
 											<VoidSwitch
 												size='md'
 												value={settingsState.globalSettings.autoAcceptLLMChanges}
@@ -1241,11 +1301,11 @@ export const Settings = () => {
 
 							{/* ─────── INSTRUCTIONS SECTION ─────── */}
 							<ErrorBoundary>
-								<div className="border-b border-void-border-4 pb-6">
+								<div style={{ backgroundColor: '#1A1A1A', width: '518px', borderRadius: '10px' }} className="px-6 py-4">
 									<div className="flex items-center justify-between mb-4">
 										<div>
-											<h2 className="text-xl mb-1">Instructions</h2>
-											<div className="text-sm text-void-fg-3">System instructions to include with all AI requests</div>
+											<h2 style={{ color: '#D9D9D9', fontSize: '12px' }} className="mb-1">Instructions</h2>
+											<div style={{ color: '#8B8B8B', fontSize: '12px' }}>System instructions to include with all AI requests</div>
 										</div>
 										<VoidSwitch
 											size='md'
@@ -1259,31 +1319,43 @@ export const Settings = () => {
 
 							{/* ─────── MCP SECTION ─────── */}
 							<ErrorBoundary>
-								<div className="border-b border-void-border-4 pb-6">
-									<h2 className="text-xl mb-1">MCP</h2>
-									<div className="text-sm text-void-fg-3 mb-4">Use MCPs to provide agent with more tools</div>
-									<VoidButtonBgDarken className="px-6 py-2" onClick={async () => { await mcpService.revealMCPConfigFile() }}>
+								<div style={{ backgroundColor: '#1A1A1A', width: '518px', height: '61px', borderRadius: '10px' }} className="px-6 flex items-center justify-between">
+									<div>
+										<h2 style={{ color: '#D9D9D9', fontSize: '12px' }} className="mb-1">MCP</h2>
+										<div style={{ color: '#8B8B8B', fontSize: '12px' }}>Use MCPs to provide agent with more tools</div>
+									</div>
+									<button
+										style={{ backgroundColor: '#252525', width: '157px', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '12px' }}
+										className="flex items-center justify-center"
+										onClick={async () => { await mcpService.revealMCPConfigFile() }}
+									>
 										Connect
-									</VoidButtonBgDarken>
+									</button>
 								</div>
 							</ErrorBoundary>
 
 							{/* ─────── EDITOR SETTINGS SECTION ─────── */}
 							<ErrorBoundary>
-								<div className="border-b border-void-border-4 pb-6">
-									<h2 className="text-xl mb-1">Editor settings</h2>
-									<div className="text-sm text-void-fg-3 mb-4">Personalise your flow with the editor</div>
-									<VoidButtonBgDarken className="px-6 py-2" onClick={() => { commandService.executeCommand('workbench.action.openSettings') }}>
+								<div style={{ backgroundColor: '#1A1A1A', width: '518px', height: '61px', borderRadius: '10px' }} className="px-6 flex items-center justify-between">
+									<div>
+										<h2 style={{ color: '#D9D9D9', fontSize: '12px' }} className="mb-1">Editor settings</h2>
+										<div style={{ color: '#8B8B8B', fontSize: '12px' }}>Personalise your flow with the editor</div>
+									</div>
+									<button
+										style={{ backgroundColor: '#252525', width: '157px', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '12px' }}
+										className="flex items-center justify-center"
+										onClick={() => { commandService.executeCommand('workbench.action.openSettings') }}
+									>
 										Open
-									</VoidButtonBgDarken>
+									</button>
 								</div>
 							</ErrorBoundary>
 
 							{/* ─────── FAST SWITCH SECTION ─────── */}
 							<ErrorBoundary>
-								<div className="pb-6">
-									<h2 className="text-xl mb-1">Fast switch</h2>
-									<div className="text-sm text-void-fg-3 mb-4">Transfer your editor settings</div>
+								<div style={{ backgroundColor: '#1A1A1A', width: '518px', borderRadius: '10px' }} className="px-6 py-4">
+									<h2 style={{ color: '#D9D9D9', fontSize: '12px' }} className="mb-1">Fast switch</h2>
+									<div style={{ color: '#8B8B8B', fontSize: '12px' }} className="mb-4">Transfer your editor settings</div>
 									<div className="flex gap-4">
 										<OneClickSwitchButton className="flex-1" fromEditor="VS Code" />
 										<OneClickSwitchButton className="flex-1" fromEditor="Cursor" />
