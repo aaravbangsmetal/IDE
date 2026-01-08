@@ -1164,7 +1164,9 @@ export const Settings = () => {
 									<div className="text-sm text-void-fg-3">Free · <span className="text-blue-400 cursor-pointer hover:underline">Upgrade ↗</span></div>
 								</div>
 							</div>
-							<VoidButtonBgDarken className="px-6 py-2">Logout</VoidButtonBgDarken>
+							<VoidButtonBgDarken className="px-6 py-2" onClick={() => { /* TODO: Implement logout functionality */ }}>
+								Logout
+							</VoidButtonBgDarken>
 						</div>
 
 						{/* ═══════════ SIMPLIFIED SECTIONS ═══════════ */}
