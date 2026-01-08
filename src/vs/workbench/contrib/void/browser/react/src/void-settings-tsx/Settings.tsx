@@ -1301,43 +1301,6 @@ export const Settings = () => {
 							</div>
 						</ErrorBoundary>
 
-					{/* ─────── INSTRUCTIONS SECTION ─────── */}
-					<ErrorBoundary>
-						<div style={{ backgroundColor: '#1A1A1A', width: '100%', maxWidth: '585px', borderRadius: '10px', padding: '16px 24px' }}>
-							<div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
-								<div>
-									<h2 style={{ color: '#D9D9D9', fontSize: '13px', marginBottom: '2px' }}>Instructions</h2>
-									<div style={{ color: '#8B8B8B', fontSize: '13px' }}>System instructions to include with all AI requests</div>
-								</div>
-								<VoidSwitch
-									size='md'
-									value={!settingsState.globalSettings.disableSystemMessage}
-									onChange={(newVal) => voidSettingsService.setGlobalSetting('disableSystemMessage', !newVal)}
-								/>
-							</div>
-							<textarea
-								value={settingsState.globalSettings.aiInstructions || ''}
-								onChange={(e) => voidSettingsService.setGlobalSetting('aiInstructions', e.target.value)}
-								placeholder=""
-								style={{
-									width: '100%',
-									maxWidth: '537px',
-									height: '69px',
-									borderRadius: '13px',
-									border: '1px solid #252525',
-									backgroundColor: 'transparent',
-									color: '#8B8B8B',
-									fontSize: '12px',
-									padding: '16px 24px',
-									resize: 'none',
-									outline: 'none',
-									overflow: 'auto',
-									lineHeight: '1.5'
-								}}
-							/>
-						</div>
-					</ErrorBoundary>
-
 					{/* ─────── MCP SECTION ─────── */}
 					<ErrorBoundary>
 						<div style={{ backgroundColor: '#1A1A1A', width: '100%', maxWidth: '585px', minHeight: '61px', borderRadius: '10px', padding: '16px 24px' }} className="flex items-center justify-between">

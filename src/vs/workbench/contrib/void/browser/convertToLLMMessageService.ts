@@ -578,15 +578,20 @@ class ConvertToLLMMessageService extends Disposable implements IConvertToLLMMess
 	// system message
 	private _generateChatMessagesSystemMessage = async (chatMode: ChatMode, specialToolFormat: 'openai-style' | 'anthropic-style' | 'gemini-style' | undefined) => {
 		const workspaceFolders = this.workspaceContextService.getWorkspace().folders.map(f => f.uri.fsPath)
+		console.log('[VOID DEBUG] Workspace folders:', workspaceFolders)
+		console.log('[VOID DEBUG] Workspace object:', this.workspaceContextService.getWorkspace())
 
 		const openedURIs = this.modelService.getModels().filter(m => m.isAttachedToEditor()).map(m => m.uri.fsPath) || [];
 		const activeURI = this.editorService.activeEditor?.resource?.fsPath;
+		console.log('[VOID DEBUG] Opened URIs:', openedURIs)
+		console.log('[VOID DEBUG] Active URI:', activeURI)
 
 		const directoryStr = await this.directoryStrService.getAllDirectoriesStr({
 			cutOffMessage: chatMode === 'agent' || chatMode === 'gather' ?
 				`...Directories string cut off, use tools to read more...`
 				: `...Directories string cut off, ask user for more if necessary...`
 		})
+		console.log('[VOID DEBUG] Directory string length:', directoryStr.length)
 
 		const includeXMLToolDefinitions = !specialToolFormat
 
@@ -594,6 +599,13 @@ class ConvertToLLMMessageService extends Disposable implements IConvertToLLMMess
 
 		const persistentTerminalIDs = this.terminalToolService.listPersistentTerminalIds()
 		const systemMessage = chat_systemMessage({ workspaceFolders, openedURIs, directoryStr, activeURI, persistentTerminalIDs, chatMode, mcpTools, includeXMLToolDefinitions })
+		console.log('[VOID DEBUG] Chat mode:', chatMode)
+		console.log('[VOID DEBUG] Include XML tools:', includeXMLToolDefinitions)
+		console.log('[VOID DEBUG] System message length:', systemMessage.length)
+		console.log('[VOID DEBUG] Has <tool_use>:', systemMessage.includes('<tool_use>'))
+		console.log('[VOID DEBUG] Has read_file:', systemMessage.includes('read_file'))
+		console.log('[VOID DEBUG] System message preview (first 800):', systemMessage.substring(0, 800))
+		console.log('[VOID DEBUG] System message end (last 500):', systemMessage.substring(systemMessage.length - 500))
 		return systemMessage
 	}
 
@@ -679,9 +691,10 @@ class ConvertToLLMMessageService extends Disposable implements IConvertToLLMMess
 			supportsSystemMessage,
 		} = getModelCapabilities(providerName, modelName, overridesOfModel)
 
-		const { disableSystemMessage } = this.voidSettingsService.state.globalSettings;
+		// IMPORTANT: System message is ALWAYS enabled - never disable it!
+		// const { disableSystemMessage } = this.voidSettingsService.state.globalSettings;
 		const fullSystemMessage = await this._generateChatMessagesSystemMessage(chatMode, specialToolFormat)
-		const systemMessage = disableSystemMessage ? '' : fullSystemMessage;
+		const systemMessage = fullSystemMessage; // Always use full system message
 
 		const modelSelectionOptions = this.voidSettingsService.state.optionsOfModelSelection['Chat'][modelSelection.providerName]?.[modelSelection.modelName]
 
