@@ -1029,6 +1029,50 @@ const MCPServersList = () => {
 	return <div className="my-2">{content}</div>
 };
 
+const UserInfoSection = ({ nativeHostService, environmentService }: { nativeHostService: any, environmentService: any }) => {
+	// TODO: Replace with actual user service/auth that provides email and subscription plan
+	// For now, using a placeholder that can be customized
+	const getUserEmail = (): string => {
+		// You can integrate with your auth service here
+		// Example: return authService.getUserEmail();
+		return 'user@gmail.com'; // Default placeholder
+	};
+
+	const userEmail = getUserEmail();
+	const userPlan = 'Free'; // TODO: Fetch from subscription service (Free/Pro/Enterprise)
+
+	// Calculate initials from email
+	const getInitials = (email: string): string => {
+		const username = email.split('@')[0];
+		const parts = username.split(/[._-]/);
+		if (parts.length >= 2) {
+			return (parts[0][0] + parts[1][0]).toUpperCase();
+		}
+		return username.slice(0, 2).toUpperCase();
+	};
+
+	const initials = getInitials(userEmail);
+
+	return (
+		<div className="flex items-center justify-between mb-8">
+			<div className="flex items-center gap-4">
+				<div className="w-12 h-12 rounded-full bg-void-bg-2 flex items-center justify-center text-xl font-semibold">
+					{initials}
+				</div>
+				<div>
+					<div className="text-base text-void-fg-1">{userEmail}</div>
+					<div className="text-sm text-void-fg-3">
+						{userPlan} · <span className="text-blue-400 cursor-pointer hover:underline">Upgrade ↗</span>
+					</div>
+				</div>
+			</div>
+			<VoidButtonBgDarken className="px-6 py-2 rounded" onClick={() => { /* TODO: Implement logout functionality */ }}>
+				Logout
+			</VoidButtonBgDarken>
+		</div>
+	);
+};
+
 export const Settings = () => {
 	const isDark = useIsDark()
 	const accessor = useAccessor()
@@ -1154,30 +1198,24 @@ export const Settings = () => {
 					<div className='max-w-3xl'>
 
 						{/* ═══════════ USER INFO SECTION ═══════════ */}
-						<div className="flex items-center justify-between mb-12">
-							<div className="flex items-center gap-4">
-								<div className="w-12 h-12 rounded-full bg-void-bg-2 flex items-center justify-center text-xl font-semibold">
-									S
-								</div>
-								<div>
-									<div className="text-base">surfers@bot.com</div>
-									<div className="text-sm text-void-fg-3">Free · <span className="text-blue-400 cursor-pointer hover:underline">Upgrade ↗</span></div>
-								</div>
-							</div>
-							<VoidButtonBgDarken className="px-6 py-2" onClick={() => { /* TODO: Implement logout functionality */ }}>
-								Logout
-							</VoidButtonBgDarken>
-						</div>
+						<ErrorBoundary>
+							<UserInfoSection
+								nativeHostService={nativeHostService}
+								environmentService={environmentService}
+							/>
+						</ErrorBoundary>
 
 						{/* ═══════════ SIMPLIFIED SECTIONS ═══════════ */}
-						<div className='flex flex-col gap-8'>
+						<div className='flex flex-col gap-6'>
 
 							{/* ─────── MANAGE ACCOUNT SECTION ─────── */}
 							<ErrorBoundary>
-								<div className="border-b border-void-border-4 pb-6">
-									<h2 className="text-xl mb-1">Manage Account</h2>
-									<div className="text-sm text-void-fg-3 mb-4">Manage your account and billing</div>
-									<VoidButtonBgDarken className="px-6 py-2" onClick={() => { commandService.executeCommand('workbench.action.openSettings') }}>
+								<div className="bg-void-bg-2 rounded-lg p-6 flex items-center justify-between">
+									<div>
+										<h2 className="text-lg mb-1 text-void-fg-1">Manage Account</h2>
+										<div className="text-sm text-void-fg-3">Manage your account and billing</div>
+									</div>
+									<VoidButtonBgDarken className="px-6 py-2 rounded-md" onClick={() => { commandService.executeCommand('workbench.action.openSettings') }}>
 										Open ↗
 									</VoidButtonBgDarken>
 								</div>
@@ -1185,10 +1223,10 @@ export const Settings = () => {
 
 							{/* ─────── REASONING TOGGLE ─────── */}
 							<ErrorBoundary>
-								<div className="border-b border-void-border-4 pb-6">
+								<div className="bg-void-bg-2 rounded-lg p-6">
 									<div className="flex items-center justify-between">
 										<div>
-											<h2 className="text-xl mb-1">Reasoning</h2>
+											<h2 className="text-lg mb-1 text-void-fg-1">Reasoning</h2>
 											<div className="text-sm text-void-fg-3">Allow the reasoning model to take action</div>
 										</div>
 										<VoidSwitch
@@ -1202,13 +1240,13 @@ export const Settings = () => {
 
 							{/* ─────── TOOLS SECTION ─────── */}
 							<ErrorBoundary>
-								<div className="border-b border-void-border-4 pb-6">
-									<h2 className="text-xl mb-1">Tools</h2>
+								<div className="bg-void-bg-2 rounded-lg p-6">
+									<h2 className="text-lg mb-1 text-void-fg-1">Tools</h2>
 									<div className="text-sm text-void-fg-3 mb-4">Tools are functions that LLMs can call</div>
 									<div className="flex flex-col gap-3">
 										{[...toolApprovalTypes].map((approvalType) => (
 											<div key={approvalType} className="flex items-center justify-between">
-												<span className="text-sm text-void-fg-2">{`Auto-approve ${approvalType}`}</span>
+												<span className="text-base text-void-fg-1">{`Auto-approve ${approvalType}`}</span>
 												<VoidSwitch
 													size='md'
 													value={settingsState.globalSettings.autoApprove[approvalType] ?? false}
@@ -1220,7 +1258,7 @@ export const Settings = () => {
 											</div>
 										))}
 										<div className="flex items-center justify-between">
-											<span className="text-sm text-void-fg-2">Fix lint errors</span>
+											<span className="text-base text-void-fg-1">Fix lint errors</span>
 											<VoidSwitch
 												size='md'
 												value={settingsState.globalSettings.includeToolLintErrors}
@@ -1228,7 +1266,7 @@ export const Settings = () => {
 											/>
 										</div>
 										<div className="flex items-center justify-between">
-											<span className="text-sm text-void-fg-2">Auto-accept LLM changes</span>
+											<span className="text-base text-void-fg-1">Auto-accept LLM changes</span>
 											<VoidSwitch
 												size='md'
 												value={settingsState.globalSettings.autoAcceptLLMChanges}
@@ -1241,10 +1279,10 @@ export const Settings = () => {
 
 							{/* ─────── INSTRUCTIONS SECTION ─────── */}
 							<ErrorBoundary>
-								<div className="border-b border-void-border-4 pb-6">
+								<div className="bg-void-bg-2 rounded-lg p-6">
 									<div className="flex items-center justify-between mb-4">
 										<div>
-											<h2 className="text-xl mb-1">Instructions</h2>
+											<h2 className="text-lg mb-1 text-void-fg-1">Instructions</h2>
 											<div className="text-sm text-void-fg-3">System instructions to include with all AI requests</div>
 										</div>
 										<VoidSwitch
@@ -1259,10 +1297,12 @@ export const Settings = () => {
 
 							{/* ─────── MCP SECTION ─────── */}
 							<ErrorBoundary>
-								<div className="border-b border-void-border-4 pb-6">
-									<h2 className="text-xl mb-1">MCP</h2>
-									<div className="text-sm text-void-fg-3 mb-4">Use MCPs to provide agent with more tools</div>
-									<VoidButtonBgDarken className="px-6 py-2" onClick={async () => { await mcpService.revealMCPConfigFile() }}>
+								<div className="bg-void-bg-2 rounded-lg p-6 flex items-center justify-between">
+									<div>
+										<h2 className="text-lg mb-1 text-void-fg-1">MCP</h2>
+										<div className="text-sm text-void-fg-3">Use MCPs to provide agent with more tools</div>
+									</div>
+									<VoidButtonBgDarken className="px-6 py-2 rounded-md" onClick={async () => { await mcpService.revealMCPConfigFile() }}>
 										Connect
 									</VoidButtonBgDarken>
 								</div>
@@ -1270,10 +1310,12 @@ export const Settings = () => {
 
 							{/* ─────── EDITOR SETTINGS SECTION ─────── */}
 							<ErrorBoundary>
-								<div className="border-b border-void-border-4 pb-6">
-									<h2 className="text-xl mb-1">Editor settings</h2>
-									<div className="text-sm text-void-fg-3 mb-4">Personalise your flow with the editor</div>
-									<VoidButtonBgDarken className="px-6 py-2" onClick={() => { commandService.executeCommand('workbench.action.openSettings') }}>
+								<div className="bg-void-bg-2 rounded-lg p-6 flex items-center justify-between">
+									<div>
+										<h2 className="text-lg mb-1 text-void-fg-1">Editor settings</h2>
+										<div className="text-sm text-void-fg-3">Personalise your flow with the editor</div>
+									</div>
+									<VoidButtonBgDarken className="px-6 py-2 rounded-md" onClick={() => { commandService.executeCommand('workbench.action.openSettings') }}>
 										Open
 									</VoidButtonBgDarken>
 								</div>
@@ -1281,8 +1323,8 @@ export const Settings = () => {
 
 							{/* ─────── FAST SWITCH SECTION ─────── */}
 							<ErrorBoundary>
-								<div className="pb-6">
-									<h2 className="text-xl mb-1">Fast switch</h2>
+								<div className="bg-void-bg-2 rounded-lg p-6">
+									<h2 className="text-lg mb-1 text-void-fg-1">Fast switch</h2>
 									<div className="text-sm text-void-fg-3 mb-4">Transfer your editor settings</div>
 									<div className="flex gap-4">
 										<OneClickSwitchButton className="flex-1" fromEditor="VS Code" />
