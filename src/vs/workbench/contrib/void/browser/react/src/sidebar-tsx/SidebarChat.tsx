@@ -350,7 +350,7 @@ export const VoidChatArea: React.FC<VoidChatAreaProps> = ({
 			style={{
 				padding: '10px 12px 12px 12px',
 				minHeight: '52px',
-				width: 'calc(100% - 2px)',
+				width: 'calc(100% - 4px)',
 				backgroundColor: '#1B1B1B',
 				border: '1px solid #353535',
 				borderRadius: '8px'
@@ -3132,14 +3132,14 @@ export const SidebarChat = () => {
 	</div>
 
 	const landingPageInput = <div>
-		<div className='pt-8 flex justify-center px-2'>
+		<div className='pt-8 flex justify-center'>
 			{inputChatArea}
 		</div>
 	</div>
 
 	const landingPageContent = <div
 		ref={sidebarRef}
-		className='w-full h-full max-h-full flex flex-col overflow-auto px-4'
+		className='w-full h-full max-h-full flex flex-col overflow-auto px-2'
 	>
 		<ErrorBoundary>
 			{landingPageInput}
