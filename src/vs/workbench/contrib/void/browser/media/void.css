@@ -97,7 +97,7 @@
 /* styles for all containers used by void */
 .void-scope {
 	--scrollbar-vertical-width: 8px;
-	--scrollbar-horizontal-height: 6px;
+	--scrollbar-horizontal-height: 8px;
 }
 
 /* Target both void-scope and all its descendants with scrollbars */
@@ -150,8 +150,8 @@
 /* Add void-scrollable-element styles to match */
 .void-scrollable-element {
 	background-color: var(--vscode-editor-background);
-	--scrollbar-vertical-width: 14px;
-	--scrollbar-horizontal-height: 6px;
+	--scrollbar-vertical-width: 8px;
+	--scrollbar-horizontal-height: 8px;
 	overflow: auto;
 	/* Ensure scrollbars are shown when needed */
 }

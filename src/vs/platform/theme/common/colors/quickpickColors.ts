@@ -10,7 +10,7 @@ import { Color, RGBA } from '../../../../base/common/color.js';
 import { registerColor, oneOf } from '../colorUtils.js';
 
 // Import the colors we need
-import { editorWidgetBackground, editorWidgetForeground, editorBackground } from './editorColors.js';
+import { editorWidgetForeground } from './editorColors.js';
 import { listActiveSelectionBackground, listActiveSelectionForeground, listActiveSelectionIconForeground } from './listColors.js';
 
 

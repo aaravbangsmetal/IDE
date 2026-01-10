@@ -343,15 +343,17 @@ export const VoidChatArea: React.FC<VoidChatAreaProps> = ({
 			className={`
 				gap-x-1
                 flex flex-col relative input text-left shrink-0
-                bg-[#1D1D1D]
 				transition-all duration-200
-				border border-[#3a3a3a]
 				max-h-[80vh] overflow-y-auto
                 ${className}
             `}
 			style={{
 				padding: '10px 12px 12px 12px',
-				minHeight: '52px'
+				minHeight: '52px',
+				width: 'calc(100% - 2px)',
+				backgroundColor: '#1B1B1B',
+				border: '1px solid #353535',
+				borderRadius: '8px'
 			}}
 			onClick={(e) => {
 				onClickAnywhere?.()
@@ -3087,7 +3089,7 @@ export const SidebarChat = () => {
 		<VoidInputBox2
 			enableAtToMention
 			className={`min-h-[20px] px-0 py-0`}
-			placeholder={`@ to mention, ${keybindingString ? `${keybindingString} to add a selection. ` : ''}Enter instructions...`}
+			placeholder="Code, @ to mention, ⌘L for section"
 			onChangeText={onChangeText}
 			onKeyDown={onKeyDown}
 			onFocus={() => { chatThreadsService.setCurrentlyFocusedMessageIdx(undefined) }}
@@ -3124,13 +3126,13 @@ export const SidebarChat = () => {
 		<div className='px-4'>
 			<CommandBarInChat />
 		</div>
-		<div className='px-2 pb-2'>
+		<div className='flex justify-center pb-2 px-2'>
 			{inputChatArea}
 		</div>
 	</div>
 
 	const landingPageInput = <div>
-		<div className='pt-8'>
+		<div className='pt-8 flex justify-center px-2'>
 			{inputChatArea}
 		</div>
 	</div>

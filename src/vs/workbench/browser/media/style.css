@@ -490,3 +490,36 @@ body {
 	margin-left: -4px !important;
 	color: #4b4b4b !important;
 }
+
+/* Standardized Scrollbar Styles - All scrollbars 8px everywhere */
+.monaco-workbench ::-webkit-scrollbar {
+	width: 8px !important;
+	height: 8px !important;
+}
+
+.monaco-workbench ::-webkit-scrollbar-thumb {
+	background: var(--vscode-scrollbarSlider-background) !important;
+	border-radius: 4px !important;
+}
+
+.monaco-workbench ::-webkit-scrollbar-thumb:hover {
+	background: var(--vscode-scrollbarSlider-hoverBackground) !important;
+}
+
+.monaco-workbench ::-webkit-scrollbar-thumb:active {
+	background: var(--vscode-scrollbarSlider-activeBackground) !important;
+}
+
+.monaco-workbench ::-webkit-scrollbar-track {
+	background: transparent !important;
+}
+
+.monaco-workbench ::-webkit-scrollbar-corner {
+	background: transparent !important;
+}
+
+/* Firefox scrollbar */
+.monaco-workbench * {
+	scrollbar-width: thin !important;
+	scrollbar-color: var(--vscode-scrollbarSlider-background) transparent !important;
+}
