@@ -202,3 +202,41 @@
 .void-scrollable-element *::-webkit-scrollbar-corner {
 	background-color: var(--void-bg-3) !important;
 }
+
+/* Remove the top border/line above CHAT header and shift content up */
+#workbench\.view\.void .pane-header,
+.pane-header[id*="workbench.view.void"],
+.split-view-view:has(#workbench\.view\.void) .pane-header {
+	border-top: none !important;
+	border: none !important;
+	padding-top: 0 !important;
+	margin-top: 0 !important;
+}
+
+/* Hide only the composite bar at the very top (the icon bar) */
+.part.auxiliarybar > .composite-bar {
+	display: none !important;
+	height: 0 !important;
+}
+
+/* Hide the void/chat icon in the left sidebar (auxiliary bar) */
+.auxiliarybar .composite-bar .action-item,
+.part.auxiliarybar .composite-bar > .monaco-action-bar,
+.part.auxiliarybar .composite-bar {
+	display: none !important;
+}
+
+/* Hide the void/chat icon in the sidebar composite bar */
+.composite-bar .monaco-action-bar .action-item[aria-label*="Chat"],
+.composite-bar .monaco-action-bar .action-item[aria-label*="chat"],
+.composite-bar .monaco-action-bar .action-item[title*="Chat"],
+.composite-bar .monaco-action-bar .action-item[title*="chat"] {
+	display: none !important;
+}
+
+/* Remove tooltip on CHAT text */
+#workbench\.view\.void .pane-header .title::after,
+.pane-header[id*="workbench.view.void"] .title::after {
+	content: none !important;
+}
+
