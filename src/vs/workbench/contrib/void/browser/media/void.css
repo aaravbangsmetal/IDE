@@ -334,4 +334,27 @@
 	content: none !important;
 }
 
+/* Hide the cuboid/icon in the pane header */
+.monaco-workbench .part.auxiliarybar .pane-header .twisty-container,
+.monaco-workbench .part.auxiliarybar .pane-header .codicon,
+.monaco-workbench .part.auxiliarybar .pane-header .icon {
+	display: none !important;
+}
+
+/* Hide the composite bar in the title area (contains the cuboid icon) */
+.monaco-workbench .part.auxiliarybar > .title > .composite-bar-container {
+	display: none !important;
+}
+
+/* Show only the title label with "Chat" text */
+.monaco-workbench .part.auxiliarybar > .title > .title-label {
+	display: flex !important;
+	flex: 1 !important;
+}
+
+/* Ensure the title shows "Chat" text properly */
+.monaco-workbench .part.auxiliarybar .pane-header .title {
+	margin-left: 8px !important;
+}
+
 
