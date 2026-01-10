@@ -3131,15 +3131,16 @@ export const SidebarChat = () => {
 		</div>
 	</div>
 
-	const landingPageInput = <div>
-		<div className='pt-0 flex justify-center'>
+	const landingPageInput = <div className='flex-shrink-0' style={{ margin: 0, padding: 0 }}>
+		<div className='pt-0 flex justify-center' style={{ margin: 0, padding: 0 }}>
 			{inputChatArea}
 		</div>
 	</div>
 
 	const landingPageContent = <div
 		ref={sidebarRef}
-		className='w-full h-full max-h-full flex flex-col overflow-auto px-2'
+		className='w-full h-full max-h-full flex flex-col overflow-auto px-2 pt-0'
+		style={{ justifyContent: 'flex-start', gap: 0, margin: 0, paddingTop: 0 }}
 	>
 		<ErrorBoundary>
 			{landingPageInput}
@@ -3147,12 +3148,12 @@ export const SidebarChat = () => {
 
 		{Object.keys(chatThreadsState.allThreads).length > 1 ? // show if there are threads
 			<ErrorBoundary>
-				<div className='pt-8 mb-2 text-void-fg-3 text-root select-none pointer-events-none'>Previous Threads</div>
+				<div className='pt-4 mb-2 text-void-fg-3 text-root select-none pointer-events-none'>Previous Threads</div>
 				<PastThreadsList />
 			</ErrorBoundary>
 			:
 			<ErrorBoundary>
-				<div className='pt-8 mb-2 text-void-fg-3 text-root select-none pointer-events-none'>Suggestions</div>
+				<div className='pt-4 mb-2 text-void-fg-3 text-root select-none pointer-events-none'>Suggestions</div>
 				{initiallySuggestedPromptsHTML}
 			</ErrorBoundary>
 		}

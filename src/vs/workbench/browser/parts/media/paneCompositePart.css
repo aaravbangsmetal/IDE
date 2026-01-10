@@ -42,6 +42,13 @@
 	border-top: 1px solid var(--vscode-sideBarActivityBarTop-border);
 }
 
+/* Hide footer in auxiliarybar */
+.monaco-workbench .auxiliarybar.pane-composite-part > .footer,
+.monaco-workbench .auxiliarybar.pane-composite-part > .header-or-footer {
+	display: none !important;
+	height: 0 !important;
+}
+
 .monaco-workbench .pane-composite-part > .title > .composite-bar-container,
 .monaco-workbench .pane-composite-part > .header-or-footer > .composite-bar-container {
 	display: flex;

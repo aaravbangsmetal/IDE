@@ -205,13 +205,23 @@
 
 /* Remove the top border/line above CHAT header and shift content up */
 .part.auxiliarybar .pane-header,
-.part.auxiliarybar .split-view-view .pane-header {
+.part.auxiliarybar .split-view-view .pane-header,
+#workbench\.view\.void .pane-header,
+.pane-header[id*="workbench.view.void"] {
 	border: none !important;
-	padding: 8px !important;
+	padding: 2px 8px !important;
 	margin: 0 !important;
 }
 
-/* Remove the top gap in auxiliarybar */
+/* Remove the top gap in auxiliarybar - target title area */
+.part.auxiliarybar > .title {
+	padding: 0 8px !important;
+	margin: 0 !important;
+	height: auto !important;
+	min-height: 0 !important;
+}
+
+/* Remove the top gap in auxiliarybar content */
 .part.auxiliarybar > .content {
 	padding-top: 0 !important;
 	margin-top: 0 !important;
@@ -229,32 +239,93 @@
 	margin-top: 0 !important;
 }
 
-/* Remove gap at top of pane body */
+/* Remove gap at top of pane body and ensure background matches */
 .part.auxiliarybar .pane-body {
+	margin-top: 0 !important;
+	padding-top: 0 !important;
+	background-color: var(--vscode-sideBar-background) !important;
+}
+
+/* Ensure no grey gaps between pane-header and pane-body */
+.part.auxiliarybar .pane > .pane-header + .pane-body {
+	margin-top: 0 !important;
+	padding-top: 0 !important;
+}
+
+/* Ensure the pane itself has matching background */
+.part.auxiliarybar .pane {
+	background-color: var(--vscode-sideBar-background) !important;
+}
+
+/* Make sure the view pane container has no top spacing */
+.part.auxiliarybar .view-pane-container,
+.part.auxiliarybar .monaco-pane-view,
+.part.auxiliarybar .monaco-pane-view .split-view-view:first-of-type {
+	padding-top: 0 !important;
+	margin-top: 0 !important;
+}
+
+/* Target the first split-view-view specifically */
+.part.auxiliarybar .monaco-pane-view .split-view-view:first-of-type {
+	margin-top: 0 !important;
+	padding-top: 0 !important;
+}
+
+.part.auxiliarybar .monaco-pane-view .split-view-view:first-of-type > .pane {
 	margin-top: 0 !important;
 	padding-top: 0 !important;
 }
 
 
-/* Hide only the composite bar at the very top (the icon bar) */
-.part.auxiliarybar > .composite-bar {
+/* Hide the header/composite bar that creates the white line - high specificity */
+.monaco-workbench .part.auxiliarybar > .header-or-footer,
+.monaco-workbench .part.auxiliarybar > .header,
+.monaco-workbench .part.auxiliarybar > .composite-bar,
+.monaco-workbench .part.auxiliarybar > .footer,
+.monaco-workbench .auxiliarybar.pane-composite-part > .header-or-footer,
+.monaco-workbench .auxiliarybar.pane-composite-part > .footer {
 	display: none !important;
 	height: 0 !important;
+	min-height: 0 !important;
+	max-height: 0 !important;
+	padding: 0 !important;
+	margin: 0 !important;
+	border: none !important;
+	visibility: hidden !important;
+	overflow: hidden !important;
 }
 
-/* Hide the void/chat icon in the left sidebar (auxiliary bar) */
-.auxiliarybar .composite-bar .action-item,
-.part.auxiliarybar .composite-bar > .monaco-action-bar,
-.part.auxiliarybar .composite-bar {
-	display: none !important;
+/* Set matching background color everywhere - high specificity */
+.monaco-workbench .part.auxiliarybar,
+.monaco-workbench .part.auxiliarybar > .content,
+.monaco-workbench .part.auxiliarybar .pane-body,
+.monaco-workbench .part.auxiliarybar .pane,
+.monaco-workbench .auxiliarybar.pane-composite-part {
+	background-color: var(--vscode-sideBar-background) !important;
 }
 
-/* Hide the void/chat icon in the sidebar composite bar */
-.composite-bar .monaco-action-bar .action-item[aria-label*="Chat"],
-.composite-bar .monaco-action-bar .action-item[aria-label*="chat"],
-.composite-bar .monaco-action-bar .action-item[title*="Chat"],
-.composite-bar .monaco-action-bar .action-item[title*="chat"] {
+/* Move content to top and bottom */
+.monaco-workbench .part.auxiliarybar > .content {
+	top: 0 !important;
+	bottom: 0 !important;
+}
+
+/* Style the status bar at the bottom to match */
+.monaco-workbench .part.statusbar {
+	background-color: var(--vscode-sideBar-background) !important;
+	border-top: none !important;
+}
+
+/* Override the activityBarTop background variable for auxiliarybar */
+.monaco-workbench .part.auxiliarybar {
+	--vscode-activityBarTop-background: var(--vscode-sideBar-background) !important;
+}
+
+/* Target the header-or-footer with the activityBarTop background */
+.monaco-workbench .pane-composite-part.auxiliarybar > .header-or-footer {
+	background-color: var(--vscode-sideBar-background) !important;
 	display: none !important;
+	height: 0 !important;
 }
 
 /* Remove tooltip on CHAT text */
@@ -262,4 +333,5 @@
 .pane-header[id*="workbench.view.void"] .title::after {
 	content: none !important;
 }
+
 
