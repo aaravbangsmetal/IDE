@@ -17,7 +17,7 @@ import { IRange } from '../../../../editor/common/core/range.js';
 import { VOID_VIEW_CONTAINER_ID, VOID_VIEW_ID } from './sidebarPane.js';
 import { IMetricsService } from '../common/metricsService.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
-import { VOID_TOGGLE_SETTINGS_ACTION_ID } from './voidSettingsPane.js';
+// import { VOID_TOGGLE_SETTINGS_ACTION_ID } from './voidSettingsPane.js'; // removed - settings gear no longer in chat header
 import { VOID_CTRL_L_ACTION_ID } from './actionIDs.js';
 import { localize2 } from '../../../../nls.js';
 import { IChatThreadService } from './chatThreadService.js';
@@ -155,7 +155,7 @@ registerAction2(class extends Action2 {
 				weight: KeybindingWeight.VoidExtension,
 			},
 			icon: { id: 'add' },
-			menu: [{ id: MenuId.ViewTitle, group: 'navigation', when: ContextKeyExpr.equals('view', VOID_VIEW_ID), }],
+			menu: [{ id: MenuId.ViewTitle, group: 'navigation', order: 1, when: ContextKeyExpr.equals('view', VOID_VIEW_ID), }],
 		});
 	}
 	async run(accessor: ServicesAccessor): Promise<void> {
@@ -212,7 +212,7 @@ registerAction2(class extends Action2 {
 			id: 'void.historyAction',
 			title: 'View Past Chats',
 			icon: { id: 'history' },
-			menu: [{ id: MenuId.ViewTitle, group: 'navigation', when: ContextKeyExpr.equals('view', VOID_VIEW_ID), }]
+			menu: [{ id: MenuId.ViewTitle, group: 'navigation', order: 2, when: ContextKeyExpr.equals('view', VOID_VIEW_ID), }]
 		});
 	}
 	async run(accessor: ServicesAccessor): Promise<void> {
@@ -235,21 +235,21 @@ registerAction2(class extends Action2 {
 })
 
 
-// Settings gear
-registerAction2(class extends Action2 {
-	constructor() {
-		super({
-			id: 'void.settingsAction',
-			title: `Void's Settings`,
-			icon: { id: 'settings-gear' },
-			menu: [{ id: MenuId.ViewTitle, group: 'navigation', when: ContextKeyExpr.equals('view', VOID_VIEW_ID), }]
-		});
-	}
-	async run(accessor: ServicesAccessor): Promise<void> {
-		const commandService = accessor.get(ICommandService)
-		commandService.executeCommand(VOID_TOGGLE_SETTINGS_ACTION_ID)
-	}
-})
+// Settings gear - REMOVED (settings icon already in top bar)
+// registerAction2(class extends Action2 {
+// 	constructor() {
+// 		super({
+// 			id: 'void.settingsAction',
+// 			title: `Void's Settings`,
+// 			icon: { id: 'settings-gear' },
+// 			menu: [{ id: MenuId.ViewTitle, group: 'navigation', when: ContextKeyExpr.equals('view', VOID_VIEW_ID), }]
+// 		});
+// 	}
+// 	async run(accessor: ServicesAccessor): Promise<void> {
+// 		const commandService = accessor.get(ICommandService)
+// 		commandService.executeCommand(VOID_TOGGLE_SETTINGS_ACTION_ID)
+// 	}
+// })
 
 
 

@@ -11,7 +11,7 @@ import { registerColor, transparent, lighten, darken } from '../colorUtils.js';
 
 // Import the colors we need
 import { foreground, contrastBorder, focusBorder, iconForeground } from './baseColors.js';
-import { editorWidgetBackground, editorBackground, editorWidgetBorder } from './editorColors.js';
+import { editorWidgetBackground } from './editorColors.js';
 
 
 // ----- input

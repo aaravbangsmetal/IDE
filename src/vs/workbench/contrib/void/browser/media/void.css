@@ -97,7 +97,7 @@
 /* styles for all containers used by void */
 .void-scope {
 	--scrollbar-vertical-width: 8px;
-	--scrollbar-horizontal-height: 6px;
+	--scrollbar-horizontal-height: 8px;
 }
 
 /* Target both void-scope and all its descendants with scrollbars */
@@ -150,8 +150,8 @@
 /* Add void-scrollable-element styles to match */
 .void-scrollable-element {
 	background-color: var(--vscode-editor-background);
-	--scrollbar-vertical-width: 14px;
-	--scrollbar-horizontal-height: 6px;
+	--scrollbar-vertical-width: 8px;
+	--scrollbar-horizontal-height: 8px;
 	overflow: auto;
 	/* Ensure scrollbars are shown when needed */
 }
@@ -202,3 +202,64 @@
 .void-scrollable-element *::-webkit-scrollbar-corner {
 	background-color: var(--void-bg-3) !important;
 }
+
+/* Remove the top border/line above CHAT header and shift content up */
+.part.auxiliarybar .pane-header,
+.part.auxiliarybar .split-view-view .pane-header {
+	border: none !important;
+	padding: 8px !important;
+	margin: 0 !important;
+}
+
+/* Remove the top gap in auxiliarybar */
+.part.auxiliarybar > .content {
+	padding-top: 0 !important;
+	margin-top: 0 !important;
+}
+
+.part.auxiliarybar .split-view-container,
+.part.auxiliarybar .split-view-view {
+	padding-top: 0 !important;
+	margin-top: 0 !important;
+}
+
+.part.auxiliarybar .pane,
+.part.auxiliarybar .pane.expanded {
+	padding-top: 0 !important;
+	margin-top: 0 !important;
+}
+
+/* Remove gap at top of pane body */
+.part.auxiliarybar .pane-body {
+	margin-top: 0 !important;
+	padding-top: 0 !important;
+}
+
+
+/* Hide only the composite bar at the very top (the icon bar) */
+.part.auxiliarybar > .composite-bar {
+	display: none !important;
+	height: 0 !important;
+}
+
+/* Hide the void/chat icon in the left sidebar (auxiliary bar) */
+.auxiliarybar .composite-bar .action-item,
+.part.auxiliarybar .composite-bar > .monaco-action-bar,
+.part.auxiliarybar .composite-bar {
+	display: none !important;
+}
+
+/* Hide the void/chat icon in the sidebar composite bar */
+.composite-bar .monaco-action-bar .action-item[aria-label*="Chat"],
+.composite-bar .monaco-action-bar .action-item[aria-label*="chat"],
+.composite-bar .monaco-action-bar .action-item[title*="Chat"],
+.composite-bar .monaco-action-bar .action-item[title*="chat"] {
+	display: none !important;
+}
+
+/* Remove tooltip on CHAT text */
+#workbench\.view\.void .pane-header .title::after,
+.pane-header[id*="workbench.view.void"] .title::after {
+	content: none !important;
+}
+

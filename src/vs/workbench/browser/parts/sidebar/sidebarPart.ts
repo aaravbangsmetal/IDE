@@ -154,7 +154,6 @@ export class SidebarPart extends AbstractPaneCompositePart {
 				return;
 			}
 
-			const mainViewContainers = ['workbench.view.explorer', 'workbench.view.search', 'workbench.view.scm', 'workbench.view.extensions'];
 			const location = ViewContainerLocation.Sidebar;
 			const allViewContainers = viewDescriptorService.getViewContainersByLocation(location);
 
@@ -174,8 +173,6 @@ export class SidebarPart extends AbstractPaneCompositePart {
 				if (originalUpdateCompositeSwitcher && !(internalCompositeBar as any)._updateOverridden) {
 					const sidebarPart = this;
 					(internalCompositeBar as any).updateCompositeSwitcher = function (donotTrigger?: boolean) {
-						const model = (this as any).model;
-
 						// Force dimension to show exactly 4 main items + chevron
 						const originalDimension = (this as any).dimension;
 						if (originalDimension) {

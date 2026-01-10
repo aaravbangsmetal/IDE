@@ -1219,20 +1219,20 @@ export const Settings = () => {
 					<div className='max-w-3xl'>
 
 					{/* ═══════════ USER INFO SECTION ═══════════ */}
-					<ErrorBoundary>
+						<ErrorBoundary>
 						<UserInfoSection />
-					</ErrorBoundary>
+						</ErrorBoundary>
 
 					{/* ═══════════ SIMPLIFIED SECTIONS ═══════════ */}
 					<div className='flex flex-col' style={{ gap: '6px' }}>
 
 					{/* ─────── MANAGE ACCOUNT SECTION ─────── */}
-					<ErrorBoundary>
+								<ErrorBoundary>
 						<div style={{ backgroundColor: '#1A1A1A', width: '100%', maxWidth: '585px', minHeight: '61px', borderRadius: '10px', padding: '16px 24px' }} className="flex items-center justify-between">
 								<div>
 									<h2 style={{ color: '#D9D9D9', fontSize: '13px', marginBottom: '2px' }}>Manage Account</h2>
 									<div style={{ color: '#8B8B8B', fontSize: '13px' }}>Manage your account and billing</div>
-								</div>
+							</div>
 								<button
 									style={{ backgroundColor: '#252525', width: '157px', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '13px' }}
 									className="flex items-center justify-center"
@@ -1244,26 +1244,26 @@ export const Settings = () => {
 								>
 									Open ↗
 								</button>
-							</div>
-						</ErrorBoundary>
+									</div>
+								</ErrorBoundary>
 
 					{/* ─────── REASONING TOGGLE ─────── */}
-					<ErrorBoundary>
+								<ErrorBoundary>
 						<div style={{ backgroundColor: '#1A1A1A', width: '100%', maxWidth: '585px', minHeight: '61px', borderRadius: '10px', padding: '16px 24px' }} className="flex items-center justify-between">
-							<div>
+											<div>
 								<h2 style={{ color: '#D9D9D9', fontSize: '13px', marginBottom: '2px' }}>Reasoning</h2>
 								<div style={{ color: '#8B8B8B', fontSize: '13px' }}>Allow the reasoning model to take action</div>
-							</div>
-							<VoidSwitch
+												</div>
+															<VoidSwitch
 								size='md'
 								value={settingsState.globalSettings.enableReasoning ?? false}
 								onChange={(newVal) => voidSettingsService.setGlobalSetting('enableReasoning' as any, newVal)}
-							/>
-						</div>
-					</ErrorBoundary>
+															/>
+														</div>
+													</ErrorBoundary>
 
 					{/* ─────── TOOLS SECTION ─────── */}
-					<ErrorBoundary>
+													<ErrorBoundary>
 						<div style={{ backgroundColor: '#1A1A1A', width: '100%', maxWidth: '585px', borderRadius: '10px', padding: '16px 24px' }}>
 								<h2 style={{ color: '#D9D9D9', fontSize: '13px', marginBottom: '2px' }}>Tools</h2>
 								<div style={{ color: '#8B8B8B', fontSize: '13px', marginBottom: '12px' }}>Tools are functions that LLMs can call</div>
@@ -1271,7 +1271,7 @@ export const Settings = () => {
 									{[...toolApprovalTypes].map((approvalType) => (
 										<div key={approvalType} className="flex items-center justify-between">
 											<span style={{ color: '#D9D9D9', fontSize: '13px' }}>{`Auto-approve ${approvalType}`}</span>
-											<VoidSwitch
+														<VoidSwitch
 												size='md'
 												value={settingsState.globalSettings.autoApprove[approvalType] ?? false}
 												onChange={(newVal) => {
@@ -1279,35 +1279,35 @@ export const Settings = () => {
 													voidSettingsService.setGlobalSetting('autoApprove', { ...currentAutoApprove, [approvalType]: newVal })
 												}}
 											/>
-										</div>
+													</div>
 									))}
 									<div className="flex items-center justify-between">
 										<span style={{ color: '#D9D9D9', fontSize: '13px' }}>Fix lint errors</span>
-										<VoidSwitch
+														<VoidSwitch
 											size='md'
-											value={settingsState.globalSettings.includeToolLintErrors}
-											onChange={(newVal) => voidSettingsService.setGlobalSetting('includeToolLintErrors', newVal)}
-										/>
-									</div>
+															value={settingsState.globalSettings.includeToolLintErrors}
+															onChange={(newVal) => voidSettingsService.setGlobalSetting('includeToolLintErrors', newVal)}
+														/>
+													</div>
 									<div className="flex items-center justify-between">
 										<span style={{ color: '#D9D9D9', fontSize: '13px' }}>Auto-accept LLM changes</span>
-										<VoidSwitch
+														<VoidSwitch
 											size='md'
-											value={settingsState.globalSettings.autoAcceptLLMChanges}
-											onChange={(newVal) => voidSettingsService.setGlobalSetting('autoAcceptLLMChanges', newVal)}
-										/>
-									</div>
-								</div>
-							</div>
-						</ErrorBoundary>
+															value={settingsState.globalSettings.autoAcceptLLMChanges}
+															onChange={(newVal) => voidSettingsService.setGlobalSetting('autoAcceptLLMChanges', newVal)}
+														/>
+													</div>
+											</div>
+													</div>
+												</ErrorBoundary>
 
 					{/* ─────── MCP SECTION ─────── */}
-					<ErrorBoundary>
+										<ErrorBoundary>
 						<div style={{ backgroundColor: '#1A1A1A', width: '100%', maxWidth: '585px', minHeight: '61px', borderRadius: '10px', padding: '16px 24px' }} className="flex items-center justify-between">
 							<div>
 								<h2 style={{ color: '#D9D9D9', fontSize: '13px', marginBottom: '2px' }}>MCP</h2>
 								<div style={{ color: '#8B8B8B', fontSize: '13px' }}>Use MCPs to provide agent with more tools</div>
-							</div>
+													</div>
 							<button
 								style={{ backgroundColor: '#252525', width: '157px', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '13px' }}
 								className="flex items-center justify-center"
@@ -1315,16 +1315,16 @@ export const Settings = () => {
 							>
 								Connect
 							</button>
-						</div>
-					</ErrorBoundary>
+											</div>
+										</ErrorBoundary>
 
 					{/* ─────── EDITOR SETTINGS SECTION ─────── */}
-					<ErrorBoundary>
+									<ErrorBoundary>
 						<div style={{ backgroundColor: '#1A1A1A', width: '100%', maxWidth: '585px', minHeight: '61px', borderRadius: '10px', padding: '16px 24px' }} className="flex items-center justify-between">
-							<div>
+								<div>
 								<h2 style={{ color: '#D9D9D9', fontSize: '13px', marginBottom: '2px' }}>Editor settings</h2>
 								<div style={{ color: '#8B8B8B', fontSize: '13px' }}>Personalise your flow with the editor</div>
-							</div>
+										</div>
 							<button
 								style={{ backgroundColor: '#252525', width: '157px', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '13px' }}
 								className="flex items-center justify-center"
@@ -1332,11 +1332,11 @@ export const Settings = () => {
 							>
 								Open
 							</button>
-						</div>
-					</ErrorBoundary>
+										</div>
+									</ErrorBoundary>
 
 						{/* ─────── FAST SWITCH SECTION ─────── */}
-						<ErrorBoundary>
+										<ErrorBoundary>
 							<div style={{ backgroundColor: '#1A1A1A', width: '100%', maxWidth: '585px', borderRadius: '10px', padding: '16px 24px' }}>
 								<h2 style={{ color: '#D9D9D9', fontSize: '13px', marginBottom: '2px' }}>Fast switch</h2>
 								<div style={{ color: '#8B8B8B', fontSize: '13px', marginBottom: '12px' }}>Transfer your editor settings</div>
@@ -1344,9 +1344,9 @@ export const Settings = () => {
 									<button style={{ backgroundColor: '#252525', flex: '1', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>VS Code</button>
 									<button style={{ backgroundColor: '#252525', flex: '1', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>Cursor</button>
 									<button style={{ backgroundColor: '#252525', flex: '1', height: '24px', borderRadius: '7.5px', color: '#8B8B8B', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>Windsurf</button>
-								</div>
-							</div>
-						</ErrorBoundary>
+											</div>
+									</div>
+									</ErrorBoundary>
 
 							{/* ═══════════ ALL OTHER SECTIONS REMOVED FOR SIMPLIFIED LAYOUT ═══════════ */}
 							{/*
