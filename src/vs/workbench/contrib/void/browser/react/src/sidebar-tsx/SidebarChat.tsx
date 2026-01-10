@@ -3132,7 +3132,7 @@ export const SidebarChat = () => {
 	</div>
 
 	const landingPageInput = <div>
-		<div className='pt-8 flex justify-center'>
+		<div className='pt-0 flex justify-center'>
 			{inputChatArea}
 		</div>
 	</div>

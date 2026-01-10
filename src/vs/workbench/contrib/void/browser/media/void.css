@@ -204,14 +204,37 @@
 }
 
 /* Remove the top border/line above CHAT header and shift content up */
-#workbench\.view\.void .pane-header,
-.pane-header[id*="workbench.view.void"],
-.split-view-view:has(#workbench\.view\.void) .pane-header {
-	border-top: none !important;
+.part.auxiliarybar .pane-header,
+.part.auxiliarybar .split-view-view .pane-header {
 	border: none !important;
+	padding: 8px !important;
+	margin: 0 !important;
+}
+
+/* Remove the top gap in auxiliarybar */
+.part.auxiliarybar > .content {
 	padding-top: 0 !important;
 	margin-top: 0 !important;
 }
+
+.part.auxiliarybar .split-view-container,
+.part.auxiliarybar .split-view-view {
+	padding-top: 0 !important;
+	margin-top: 0 !important;
+}
+
+.part.auxiliarybar .pane,
+.part.auxiliarybar .pane.expanded {
+	padding-top: 0 !important;
+	margin-top: 0 !important;
+}
+
+/* Remove gap at top of pane body */
+.part.auxiliarybar .pane-body {
+	margin-top: 0 !important;
+	padding-top: 0 !important;
+}
+
 
 /* Hide only the composite bar at the very top (the icon bar) */
 .part.auxiliarybar > .composite-bar {
