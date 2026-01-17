@@ -125,9 +125,19 @@ class OpencodeService extends Disposable implements IOpencodeService {
 				this._config = { ...this._config, ...config };
 			}
 
-			// Try to connect to existing server first
+			// Load SDK client module dynamically
+			if (!this._sdkClientModule) {
+				try {
+					this._sdkClientModule = await importAMDNodeModule<OpencodeSDKClient>('@opencode-ai/sdk', 'dist/client.js');
+				} catch (loadError) {
+					throw new Error(`Failed to load Opencode SDK: ${loadError instanceof Error ? loadError.message : String(loadError)}. Make sure @opencode-ai/sdk is installed.`);
+				}
+			}
+
+			// Connect to existing Opencode server
+			// Note: We cannot start the server from browser context, it must be started manually
 			try {
-				this._client = createOpencodeClient({
+				this._client = this._sdkClientModule.createOpencodeClient({
 					baseUrl: this._config.baseUrl || `http://${this._config.hostname}:${this._config.port}`
 				});
 
@@ -137,39 +147,12 @@ class OpencodeService extends Disposable implements IOpencodeService {
 					this._isConnected = true;
 					await this.refreshSessions();
 					this._onDidConnect.fire();
+					console.log(`Connected to Opencode server at ${this._config.baseUrl || `http://${this._config.hostname}:${this._config.port}`}`);
 					return;
 				}
 			} catch (err) {
-				// Server not running, try to start it
-				console.log('Opencode server not found, attempting to start it...');
-			}
-
-			// Start server programmatically if not running
-			try {
-				const { client, server } = await this._sdkModule!.createOpencode({
-					hostname: this._config.hostname,
-					port: this._config.port,
-					config: {
-						// Enable webfetch tool for web search
-						tools: {
-							webfetch: true,
-							edit: true,
-							write: true,
-							bash: true
-						},
-						network: { allowed: true }
-					} as any
-				});
-
-				this._server = server;
-				this._client = client;
-				console.log(`Opencode server started at ${server.url}`);
-
-				this._isConnected = true;
-				await this.refreshSessions();
-				this._onDidConnect.fire();
-			} catch (startError) {
-				throw new Error(`Failed to start Opencode server: ${startError instanceof Error ? startError.message : String(startError)}. Make sure you have Opencode installed or start it manually.`);
+				const errorMessage = err instanceof Error ? err.message : String(err);
+				throw new Error(`Failed to connect to Opencode server at ${this._config.baseUrl || `http://${this._config.hostname}:${this._config.port}`}. Make sure the Opencode server is running. Start it with: npx @opencode-ai/cli`);
 			}
 		} catch (error) {
 			this._isConnected = false;
