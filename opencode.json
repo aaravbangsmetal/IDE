@@ -4,5 +4,10 @@
     "edit": true,
     "write": true,
     "bash": true
+  },
+  "server": {
+    "hostname": "127.0.0.1",
+    "port": 4096,
+    "cors": ["vscode-file://vscode-app", "file://", "http://localhost:*", "http://127.0.0.1:*", "*"]
   }
 }

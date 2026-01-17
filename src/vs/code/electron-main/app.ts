@@ -1149,10 +1149,13 @@ export class CodeApplication extends Disposable {
 
 		const instantiationService = this.mainInstantiationService.createChild(services);
 
-		// Auto-start Opencode server (access service to trigger instantiation)
+		// Auto-start Opencode server (trigger lazy instantiation by accessing the service)
 		try {
-			const opencodeService = instantiationService.createInstance(IOpencodeMainService);
-			// Service constructor will auto-start the server
+			instantiationService.invokeFunction(accessor => {
+				// Just accessing the service will trigger its instantiation
+				// The constructor auto-starts the server
+				accessor.get(IOpencodeMainService);
+			});
 		} catch (err) {
 			this.logService.error('[Opencode] Failed to initialize:', err);
 		}

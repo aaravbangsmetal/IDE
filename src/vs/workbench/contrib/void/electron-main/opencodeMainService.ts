@@ -16,8 +16,6 @@ export interface IOpencodeMainService {
 	startServer(): Promise<{ url: string; port: number }>;
 	stopServer(): Promise<void>;
 	isServerRunning(): boolean;
-	// Proxy HTTP requests to avoid CORS issues
-	proxyRequest(method: string, path: string, body?: any): Promise<any>;
 }
 
 export class OpencodeMainService extends Disposable implements IOpencodeMainService {
@@ -46,10 +44,13 @@ export class OpencodeMainService extends Disposable implements IOpencodeMainServ
 		}
 
 		try {
+			// Kill any existing opencode server on this port
+			await this._killExistingServer();
+
 			// Find opencode command
 			const opencodePath = this._findOpencodeCommand();
 			if (!opencodePath) {
-				const errorMsg = 'Opencode command not found. Please install it: npm install -g @opencode-ai/cli';
+				const errorMsg = 'Opencode command not found. Please install it from https://opencode.ai';
 				console.error(`[Opencode] ${errorMsg}`);
 				process.stderr.write(`[Opencode] ${errorMsg}\n`);
 				throw new Error(errorMsg);
@@ -58,17 +59,20 @@ export class OpencodeMainService extends Disposable implements IOpencodeMainServ
 			console.log(`[Opencode] Starting server with: ${opencodePath}`);
 			process.stdout.write(`[Opencode] Starting server with: ${opencodePath}\n`);
 
-			// Start the server with CORS enabled
-			// Note: Opencode server should handle CORS automatically, but we can pass config via env
-			this._serverProcess = spawn(opencodePath, ['serve', '--hostname', '127.0.0.1', '--port', String(this._serverPort)], {
+			// Start the server with CORS enabled for all origins
+			// Use 'serve' command with --cors '*' for browser access
+			this._serverProcess = spawn(opencodePath, [
+				'serve',
+				'--hostname', '0.0.0.0',  // Listen on all interfaces
+				'--port', String(this._serverPort),
+				'--cors', '*'  // Allow all origins
+			], {
 				detached: false,
 				stdio: ['ignore', 'pipe', 'pipe'],
 				env: {
 					...process.env,
-					// Enable CORS for browser access
-					OPENCODE_CORS_ENABLED: 'true',
-					OPENCODE_ALLOW_ORIGIN: '*', // Allow all origins for localhost
-				}
+				},
+				cwd: process.cwd() // Use current working directory for config
 			});
 
 			this._serverProcess.stdout?.on('data', (data: Buffer) => {
@@ -124,6 +128,20 @@ export class OpencodeMainService extends Disposable implements IOpencodeMainServ
 			this._serverProcess.kill();
 			this._serverProcess = undefined;
 			this._serverUrl = undefined;
+		}
+	}
+
+	private async _killExistingServer(): Promise<void> {
+		try {
+			const { execSync } = require('child_process');
+			// Kill any existing opencode process on the port
+			execSync(`lsof -ti :${this._serverPort} | xargs kill -9 2>/dev/null || true`, { encoding: 'utf-8' });
+			// Also kill any opencode serve/web processes
+			execSync(`pkill -f "opencode (serve|web)" 2>/dev/null || true`, { encoding: 'utf-8' });
+			// Wait a bit for processes to die
+			await new Promise(resolve => setTimeout(resolve, 500));
+		} catch {
+			// Ignore errors - process might not exist
 		}
 	}
 
