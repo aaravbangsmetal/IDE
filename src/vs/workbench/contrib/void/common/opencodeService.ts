@@ -7,10 +7,21 @@ import { Emitter, Event } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 import { registerSingleton, InstantiationType } from '../../../../platform/instantiation/common/extensions.js';
+import { IMainProcessService } from '../../../../platform/ipc/common/mainProcessService.js';
+import { ProxyChannel } from '../../../../base/parts/ipc/common/ipc.js';
+import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
 import type { OpencodeSessionInfo, OpencodeEvent, OpencodeConfig, OpencodeToolCall, OpencodePermission } from './opencodeServiceTypes.js';
 
-// Simple HTTP client for Opencode API (using fetch directly since SDK is ES modules)
-// Note: The raw API returns responses directly without a "data" wrapper
+// Main process service interface (for IPC)
+interface IOpencodeMainService {
+	readonly _serviceBrand: undefined;
+	startServer(workingDirectory?: string): Promise<{ url: string; port: number }>;
+	stopServer(): Promise<void>;
+	isServerRunning(): boolean;
+	restartWithDirectory(workingDirectory: string): Promise<{ url: string; port: number }>;
+}
+
+// Simple HTTP client for Opencode API
 interface OpencodeHTTPClient {
 	global: {
 		health(): Promise<{ healthy: boolean; version?: string }>;
@@ -57,59 +68,136 @@ export interface IOpencodeService {
 	readonly onDidToolCall: Event<OpencodeToolCall>;
 	readonly onDidPermissionRequest: Event<OpencodePermission>;
 
-	// Connection methods
+	// Methods
 	connect(config?: OpencodeConfig): Promise<void>;
 	disconnect(): Promise<void>;
 
-	// Session methods
+	// Session management
 	createSession(title?: string): Promise<string>;
 	listSessions(): Promise<OpencodeSessionInfo[]>;
 	getSession(sessionId: string): Promise<OpencodeSessionInfo | undefined>;
 	deleteSession(sessionId: string): Promise<boolean>;
 	setCurrentSession(sessionId: string | undefined): void;
+	refreshSessions(): Promise<void>;
 
-	// Prompt methods
+	// Messaging
 	sendPrompt(sessionId: string, prompt: string, options?: { noReply?: boolean }): Promise<string>;
 	sendCommand(sessionId: string, command: string): Promise<void>;
-	runShell(sessionId: string, command: string): Promise<string>;
 
-	// File operations
+	// Tools
+	runShell(sessionId: string, command: string): Promise<string>;
 	readFile(path: string): Promise<string>;
 	searchFiles(query: string, type?: 'file' | 'directory'): Promise<string[]>;
 	searchText(pattern: string): Promise<Array<{ path: string; lines: number[] }>>;
 
-	// Web operations
-	fetchWeb(url: string): Promise<string>;
-
-	// Permission handling
+	// Permissions
 	approvePermission(sessionId: string, permissionId: string, approved: boolean): Promise<void>;
 
-	// Event subscription
+	// Events subscription
 	subscribeToEvents(sessionId: string): Promise<void>;
+
+	// Web fetch
+	fetchWeb(url: string): Promise<string>;
 }
 
 class OpencodeService extends Disposable implements IOpencodeService {
-	declare readonly _serviceBrand: undefined;
+	readonly _serviceBrand: undefined;
 
-	private _client: OpencodeHTTPClient | undefined;
-	private _baseUrl: string = 'http://localhost:4096';
-	private _isConnected: boolean = false;
+	private _isConnected = false;
 	private _currentSessionId: string | undefined;
 	private _sessions: OpencodeSessionInfo[] = [];
-	private _eventStream: AsyncIterable<OpencodeEvent> | undefined;
+	private _client: OpencodeHTTPClient | null = null;
 	private _config: OpencodeConfig = {
 		hostname: '127.0.0.1',
-		port: 4096,
-		baseUrl: 'http://localhost:4096'
+		port: 4096
 	};
+	private _baseUrl: string = 'http://127.0.0.1:4096';
+	private _eventSource: EventSource | null = null;
 
-	// Create HTTP client wrapper using direct fetch
-	// Server is started with `opencode serve` which exposes JSON API endpoints
-	// API paths follow the pattern: /global/*, /session/*, /file/*, /find/*
+	// IPC proxy to main process
+	private readonly _mainService: IOpencodeMainService;
+
+	// Events
+	private readonly _onDidConnect = this._register(new Emitter<void>());
+	readonly onDidConnect = this._onDidConnect.event;
+
+	private readonly _onDidDisconnect = this._register(new Emitter<void>());
+	readonly onDidDisconnect = this._onDidDisconnect.event;
+
+	private readonly _onDidSessionChange = this._register(new Emitter<string | undefined>());
+	readonly onDidSessionChange = this._onDidSessionChange.event;
+
+	private readonly _onDidSessionsChange = this._register(new Emitter<void>());
+	readonly onDidSessionsChange = this._onDidSessionsChange.event;
+
+	private readonly _onDidReceiveEvent = this._register(new Emitter<OpencodeEvent>());
+	readonly onDidReceiveEvent = this._onDidReceiveEvent.event;
+
+	private readonly _onDidToolCall = this._register(new Emitter<OpencodeToolCall>());
+	readonly onDidToolCall = this._onDidToolCall.event;
+
+	private readonly _onDidPermissionRequest = this._register(new Emitter<OpencodePermission>());
+	readonly onDidPermissionRequest = this._onDidPermissionRequest.event;
+
+	constructor(
+		@IMainProcessService mainProcessService: IMainProcessService,
+		@IWorkspaceContextService private readonly _workspaceContextService: IWorkspaceContextService,
+	) {
+		super();
+
+		// Create IPC proxy to main process service
+		this._mainService = ProxyChannel.toService<IOpencodeMainService>(
+			mainProcessService.getChannel('void-channel-opencode')
+		);
+
+		// Auto-connect when workspace is available
+		this._register(this._workspaceContextService.onDidChangeWorkspaceFolders(() => {
+			// Workspace changed - reconnect with new directory
+			if (this._isConnected) {
+				console.log('[Opencode] Workspace changed, reconnecting...');
+				this._reconnectWithCurrentWorkspace();
+			}
+		}));
+
+		// Initial connection attempt after a small delay
+		setTimeout(() => {
+			this._autoConnect();
+		}, 1000);
+	}
+
+	private async _autoConnect(): Promise<void> {
+		try {
+			await this.connect();
+		} catch (err) {
+			console.log('[Opencode] Auto-connect failed (will retry on first use):', err);
+		}
+	}
+
+	private async _reconnectWithCurrentWorkspace(): Promise<void> {
+		try {
+			await this.disconnect();
+			await this.connect();
+		} catch (err) {
+			console.error('[Opencode] Reconnect failed:', err);
+		}
+	}
+
+	get isConnected(): boolean {
+		return this._isConnected;
+	}
+
+	get currentSessionId(): string | undefined {
+		return this._currentSessionId;
+	}
+
+	get sessions(): OpencodeSessionInfo[] {
+		return [...this._sessions];
+	}
+
+	// Create HTTP client wrapper
 	private _createHTTPClient(baseUrl: string): OpencodeHTTPClient {
-		const apiCall = async (method: string, path: string, body?: any): Promise<any> => {
-			const url = `${baseUrl}${path}`;
-			console.log(`[Opencode API] ${method} ${url}`);
+		const apiCall = async (method: string, stringPath: string, body?: any): Promise<any> => {
+			const url = `${baseUrl}${stringPath}`;
 			const options: RequestInit = {
 				method,
 				headers: {
@@ -123,61 +211,40 @@ class OpencodeService extends Disposable implements IOpencodeService {
 				options.body = JSON.stringify(body);
 			}
 			const response = await fetch(url, options);
-			const contentType = response.headers.get('content-type') || '';
-
-			// Check if we got HTML instead of JSON (wrong server/endpoint)
-			if (contentType.includes('text/html')) {
-				throw new Error(`Server returned HTML instead of JSON. Make sure 'opencode serve' is running (not 'opencode web'). URL: ${url}`);
-			}
-
 			if (!response.ok) {
 				throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 			}
-
-			// Handle empty responses
 			const text = await response.text();
-			if (!text) {
-				return { data: null };
-			}
-
+			if (!text) return null;
 			try {
 				return JSON.parse(text);
-			} catch (e) {
-				throw new Error(`Invalid JSON response: ${text.substring(0, 100)}...`);
+			} catch {
+				return text;
 			}
 		};
 
 		return {
 			global: {
-				// API endpoint: GET /global/health
 				health: () => apiCall('GET', '/global/health')
 			},
 			session: {
-				// API endpoint: GET /session
 				list: () => apiCall('GET', '/session'),
-				// API endpoint: POST /session
 				create: (body) => apiCall('POST', '/session', body),
-				// API endpoint: GET /session/:id
 				get: (path) => apiCall('GET', `/session/${path.id}`),
-				// API endpoint: DELETE /session/:id
 				delete: (path) => apiCall('DELETE', `/session/${path.id}`),
-				// API endpoint: POST /session/:id/message (not /prompt - that's the SDK abstraction)
 				prompt: (path, body) => apiCall('POST', `/session/${path.id}/message`, body),
-				// API endpoint: POST /session/:id/command
 				command: (path, body) => apiCall('POST', `/session/${path.id}/command`, body),
-				// API endpoint: POST /session/:id/shell
 				shell: (path, body) => apiCall('POST', `/session/${path.id}/shell`, body),
-				// API endpoint: GET /session/:id/message
 				messages: (path) => apiCall('GET', `/session/${path.id}/message`)
 			},
-			// API endpoint: POST /session/:id/permissions/:permissionId
 			postSessionIdPermissionsPermissionId: (path, body) => apiCall('POST', `/session/${path.id}/permissions/${path.permissionID}`, body),
 			event: {
 				subscribe: async () => {
-					// SSE subscription endpoint: /global/event (for streaming events)
 					const url = `${baseUrl}/global/event`;
-					console.log(`[Opencode] Subscribing to SSE events at ${url}`);
+					console.log(`[Opencode] Subscribing to SSE at ${url}`);
 					const eventSource = new EventSource(url);
+					this._eventSource = eventSource;
+
 					const stream: AsyncIterable<OpencodeEvent> = {
 						async *[Symbol.asyncIterator]() {
 							const events: OpencodeEvent[] = [];
@@ -185,9 +252,9 @@ class OpencodeService extends Disposable implements IOpencodeService {
 							let reject: ((error: any) => void) | null = null;
 
 							eventSource.onmessage = (e) => {
-								console.log('[Opencode] SSE event received:', e.data?.substring(0, 200));
 								try {
 									const event = JSON.parse(e.data) as OpencodeEvent;
+									console.log('[Opencode] SSE event:', event.type);
 									if (resolve) {
 										resolve(event);
 										resolve = null;
@@ -196,10 +263,6 @@ class OpencodeService extends Disposable implements IOpencodeService {
 									}
 								} catch (err) {
 									console.error('[Opencode] SSE parse error:', err);
-									if (reject) {
-										reject(err);
-										reject = null;
-									}
 								}
 							};
 
@@ -227,53 +290,13 @@ class OpencodeService extends Disposable implements IOpencodeService {
 				}
 			},
 			file: {
-				// API endpoint: GET /file/content?path=...
 				read: (query) => apiCall('GET', `/file/content?path=${encodeURIComponent(query.path)}`)
 			},
 			find: {
-				// API endpoint: GET /find/file?query=...
 				files: (query) => apiCall('GET', `/find/file?query=${encodeURIComponent(query.query)}${query.dirs ? `&dirs=${query.dirs}` : ''}`),
-				// API endpoint: GET /find/text?pattern=...
 				text: (query) => apiCall('GET', `/find/text?pattern=${encodeURIComponent(query.pattern)}`)
 			}
 		};
-	}
-
-	private readonly _onDidConnect = this._register(new Emitter<void>());
-	readonly onDidConnect = this._onDidConnect.event;
-
-	private readonly _onDidDisconnect = this._register(new Emitter<void>());
-	readonly onDidDisconnect = this._onDidDisconnect.event;
-
-	private readonly _onDidSessionChange = this._register(new Emitter<string | undefined>());
-	readonly onDidSessionChange = this._onDidSessionChange.event;
-
-	private readonly _onDidSessionsChange = this._register(new Emitter<void>());
-	readonly onDidSessionsChange = this._onDidSessionsChange.event;
-
-	private readonly _onDidReceiveEvent = this._register(new Emitter<OpencodeEvent>());
-	readonly onDidReceiveEvent = this._onDidReceiveEvent.event;
-
-	private readonly _onDidToolCall = this._register(new Emitter<OpencodeToolCall>());
-	readonly onDidToolCall = this._onDidToolCall.event;
-
-	private readonly _onDidPermissionRequest = this._register(new Emitter<OpencodePermission>());
-	readonly onDidPermissionRequest = this._onDidPermissionRequest.event;
-
-	constructor() {
-		super();
-	}
-
-	get isConnected(): boolean {
-		return this._isConnected && !!this._client;
-	}
-
-	get currentSessionId(): string | undefined {
-		return this._currentSessionId;
-	}
-
-	get sessions(): OpencodeSessionInfo[] {
-		return this._sessions;
 	}
 
 	async connect(config?: OpencodeConfig): Promise<void> {
@@ -286,102 +309,96 @@ class OpencodeService extends Disposable implements IOpencodeService {
 				this._config = { ...this._config, ...config };
 			}
 
-			// Connect to existing Opencode server using HTTP client
-			// Note: We cannot start the server from browser context, it must be started manually
-			const serverUrl = this._config.baseUrl || `http://${this._config.hostname}:${this._config.port}`;
-			this._baseUrl = serverUrl;
+			// Get workspace directory
+			const workspaceFolders = this._workspaceContextService.getWorkspace().folders;
+			const workspaceDir = config?.workspaceDir || workspaceFolders[0]?.uri.fsPath;
 
+			console.log(`[Opencode] Connecting with workspace: ${workspaceDir || 'none'}`);
+
+			// Tell main process to start server with this workspace directory
+			// This is the DEEP INTEGRATION - main process manages the server
 			try {
-				console.log(`[Opencode] Connecting to server at ${serverUrl}...`);
-				this._client = this._createHTTPClient(serverUrl);
-
-				// Test connection
-				console.log('[Opencode] Testing connection...');
-				const health = await this._client.global.health();
-				console.log('[Opencode] Health response:', JSON.stringify(health));
-				if (health?.healthy) {
-					this._isConnected = true;
-					await this.refreshSessions();
-					this._onDidConnect.fire();
-					console.log(`[Opencode] Connected successfully to ${serverUrl}, version: ${health.version}`);
-					return;
-				} else {
-					throw new Error('Server health check returned unhealthy');
-				}
+				const result = await this._mainService.restartWithDirectory(workspaceDir || process.cwd?.() || '/tmp');
+				console.log(`[Opencode] Main process started server at ${result.url}`);
+				this._baseUrl = result.url;
 			} catch (err) {
-				console.error('[Opencode] Connection error:', err);
-				const errorMessage = err instanceof Error ? err.message : String(err);
-
-				// Check if it's a network error (server not running)
-				if (errorMessage.includes('fetch') || errorMessage.includes('network') || errorMessage.includes('ECONNREFUSED') || errorMessage.includes('Failed to fetch')) {
-					throw new Error(`Cannot connect to Opencode server at ${serverUrl}. The server is not running. Please start it with: opencode serve`);
-				}
-
-				throw new Error(`Failed to connect to Opencode server at ${serverUrl}: ${errorMessage}. Make sure the Opencode server is running. Start it with: opencode serve`);
+				console.log('[Opencode] Main process server start failed, trying existing server:', err);
+				// Fallback to connecting to existing server
+				this._baseUrl = this._config.baseUrl || `http://${this._config.hostname}:${this._config.port}`;
 			}
-		} catch (error) {
-			this._isConnected = false;
-			throw new Error(`Failed to connect to Opencode: ${error instanceof Error ? error.message : String(error)}`);
+
+			// Create HTTP client
+			this._client = this._createHTTPClient(this._baseUrl);
+
+			// Test connection
+			console.log(`[Opencode] Testing connection to ${this._baseUrl}...`);
+			const health = await this._client.global.health();
+			console.log('[Opencode] Health:', JSON.stringify(health));
+
+			if (health?.healthy) {
+				this._isConnected = true;
+				await this.refreshSessions();
+				this._onDidConnect.fire();
+				console.log(`[Opencode] Connected successfully to ${this._baseUrl}`);
+				return;
+			} else {
+				throw new Error('Server health check returned unhealthy');
+			}
+		} catch (err) {
+			console.error('[Opencode] Connection error:', err);
+			throw new Error(`Failed to connect to Opencode: ${err instanceof Error ? err.message : String(err)}`);
 		}
 	}
 
 	async disconnect(): Promise<void> {
-		if (this._eventStream) {
-			// Close event stream if needed
-			this._eventStream = undefined;
+		if (this._eventSource) {
+			this._eventSource.close();
+			this._eventSource = null;
 		}
-		this._client = undefined;
+		this._client = null;
 		this._isConnected = false;
+		this._currentSessionId = undefined;
+		this._sessions = [];
 		this._onDidDisconnect.fire();
+	}
+
+	async refreshSessions(): Promise<void> {
+		if (!this._client) return;
+		try {
+			const sessions = await this._client.session.list();
+			this._sessions = Array.isArray(sessions) ? sessions : [];
+			this._onDidSessionsChange.fire();
+		} catch (err) {
+			console.error('[Opencode] Failed to refresh sessions:', err);
+		}
 	}
 
 	async createSession(title?: string): Promise<string> {
 		if (!this._client) {
 			throw new Error('Not connected to Opencode');
 		}
-
-		const result = await this._client.session.create({
-			title: title || 'New Session'
-		});
-
+		const result = await this._client.session.create({ title });
+		const sessionId = result.id;
 		await this.refreshSessions();
-		return result.id;
+		return sessionId;
 	}
 
 	async listSessions(): Promise<OpencodeSessionInfo[]> {
 		if (!this._client) {
-			return [];
+			throw new Error('Not connected to Opencode');
 		}
-
 		const sessions = await this._client.session.list();
-		// API returns array directly, not wrapped in data
-		const sessionList = Array.isArray(sessions) ? sessions : [];
-		return sessionList.map((s: any) => ({
-			id: s.id,
-			title: s.title || 'Untitled',
-			createdAt: s.createdAt ? new Date(s.createdAt).getTime() : Date.now(),
-			updatedAt: s.updatedAt ? new Date(s.updatedAt).getTime() : Date.now(),
-			isActive: s.id === this._currentSessionId
-		}));
+		this._sessions = Array.isArray(sessions) ? sessions : [];
+		this._onDidSessionsChange.fire();
+		return this._sessions;
 	}
 
 	async getSession(sessionId: string): Promise<OpencodeSessionInfo | undefined> {
 		if (!this._client) {
-			return undefined;
+			throw new Error('Not connected to Opencode');
 		}
-
 		try {
-			const session = await this._client.session.get({ id: sessionId });
-			if (!session) {
-				return undefined;
-			}
-			return {
-				id: session.id,
-				title: session.title || 'Untitled',
-				createdAt: session.createdAt ? new Date(session.createdAt).getTime() : Date.now(),
-				updatedAt: session.updatedAt ? new Date(session.updatedAt).getTime() : Date.now(),
-				isActive: session.id === this._currentSessionId
-			};
+			return await this._client.session.get({ id: sessionId });
 		} catch {
 			return undefined;
 		}
@@ -389,29 +406,16 @@ class OpencodeService extends Disposable implements IOpencodeService {
 
 	async deleteSession(sessionId: string): Promise<boolean> {
 		if (!this._client) {
-			return false;
+			throw new Error('Not connected to Opencode');
 		}
-
-		try {
-			const result = await this._client.session.delete({ id: sessionId });
-			if (result) {
-				await this.refreshSessions();
-				if (this._currentSessionId === sessionId) {
-					this.setCurrentSession(undefined);
-				}
-			}
-			return result || false;
-		} catch {
-			return false;
-		}
+		const result = await this._client.session.delete({ id: sessionId });
+		await this.refreshSessions();
+		return result;
 	}
 
 	setCurrentSession(sessionId: string | undefined): void {
-		if (this._currentSessionId !== sessionId) {
-			this._currentSessionId = sessionId;
-			this._onDidSessionChange.fire(sessionId);
-			this.refreshSessions();
-		}
+		this._currentSessionId = sessionId;
+		this._onDidSessionChange.fire(sessionId);
 	}
 
 	async sendPrompt(sessionId: string, prompt: string, options?: { noReply?: boolean }): Promise<string> {
@@ -419,24 +423,22 @@ class OpencodeService extends Disposable implements IOpencodeService {
 			throw new Error('Not connected to Opencode');
 		}
 
-		// Enhance prompt to explicitly mention web search capability if user asks about web
+		// Enhance prompt for web search if needed
 		let enhancedPrompt = prompt;
 		const lowerPrompt = prompt.toLowerCase();
-		if ((lowerPrompt.includes('search the web') || lowerPrompt.includes('search web') || lowerPrompt.includes('look up') || lowerPrompt.includes('find information'))
-			&& !lowerPrompt.includes('webfetch') && !lowerPrompt.includes('use webfetch')) {
-			// Add hint that webfetch tool is available
-			enhancedPrompt = `${prompt}\n\nNote: You have access to the webfetch tool to search the web and fetch web pages. Use it when you need current information from the internet.`;
+		if ((lowerPrompt.includes('search') || lowerPrompt.includes('look up') || lowerPrompt.includes('find'))
+			&& (lowerPrompt.includes('web') || lowerPrompt.includes('internet') || lowerPrompt.includes('online'))) {
+			enhancedPrompt = `${prompt}\n\nNote: Use the webfetch tool to search the web.`;
 		}
 
-		// Send prompt via the API
-		const url = `${this._baseUrl}/session/${sessionId}/message`;
-		console.log(`[Opencode API] POST ${url}`);
-
-		// Fire initial streaming event to show "thinking"
+		// Fire thinking event
 		this._onDidReceiveEvent.fire({
 			type: 'message.streaming',
 			properties: { text: '', thinking: true }
 		});
+
+		const url = `${this._baseUrl}/session/${sessionId}/message`;
+		console.log(`[Opencode] POST ${url}`);
 
 		const response = await fetch(url, {
 			method: 'POST',
@@ -456,37 +458,21 @@ class OpencodeService extends Disposable implements IOpencodeService {
 			throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 		}
 
-		// Check if we got HTML instead of JSON
-		const contentType = response.headers.get('content-type') || '';
-		if (contentType.includes('text/html')) {
-			throw new Error(`Server returned HTML instead of JSON. Make sure 'opencode serve' is running (not 'opencode web').`);
-		}
-
-		// Get the full response
 		const text = await response.text();
-		console.log('[Opencode] Prompt response:', text.substring(0, 500));
+		console.log('[Opencode] Response:', text.substring(0, 300));
 
-		// Parse and extract text from response
+		// Parse response
 		let resultText = '';
 		try {
 			const parsed = JSON.parse(text);
-
-			// Response format can be:
-			// 1. { info: {...}, parts: [...] }
-			// 2. { parts: [...] }
-			// 3. { content: "..." }
-			// 4. Array of parts
 			if (parsed?.parts) {
-				const textParts = parsed.parts.filter((p: any) => p.type === 'text');
-				resultText = textParts.map((p: any) => p.text || '').join('\n');
+				resultText = parsed.parts.filter((p: any) => p.type === 'text').map((p: any) => p.text || '').join('\n');
 			} else if (parsed?.info?.parts) {
-				const textParts = parsed.info.parts.filter((p: any) => p.type === 'text');
-				resultText = textParts.map((p: any) => p.text || '').join('\n');
+				resultText = parsed.info.parts.filter((p: any) => p.type === 'text').map((p: any) => p.text || '').join('\n');
 			} else if (parsed?.content) {
 				resultText = parsed.content;
 			} else if (Array.isArray(parsed)) {
-				const textParts = parsed.filter((p: any) => p.type === 'text');
-				resultText = textParts.map((p: any) => p.text || '').join('\n');
+				resultText = parsed.filter((p: any) => p.type === 'text').map((p: any) => p.text || '').join('\n');
 			}
 		} catch {
 			resultText = text;
@@ -505,27 +491,17 @@ class OpencodeService extends Disposable implements IOpencodeService {
 		if (!this._client) {
 			throw new Error('Not connected to Opencode');
 		}
-
-		await this._client.session.command(
-			{ id: sessionId },
-			{ command, arguments: '' }
-		);
+		await this._client.session.command({ id: sessionId }, { command, arguments: '' });
 	}
 
 	async runShell(sessionId: string, command: string): Promise<string> {
 		if (!this._client) {
 			throw new Error('Not connected to Opencode');
 		}
-
-		const result = await this._client.session.shell(
-			{ id: sessionId },
-			{ command, agent: 'default' }
-		);
-
-		// Shell returns AssistantMessage, extract text from parts
+		const result = await this._client.session.shell({ id: sessionId }, { command, agent: 'shell' });
 		if (result?.parts) {
-			const textPart = result.parts.find((p: any) => p.type === 'text');
-			return textPart?.text || '';
+			const textParts = result.parts.filter(p => p.type === 'text');
+			return textParts.map(p => p.text || '').join('\n');
 		}
 		return '';
 	}
@@ -534,61 +510,40 @@ class OpencodeService extends Disposable implements IOpencodeService {
 		if (!this._client) {
 			throw new Error('Not connected to Opencode');
 		}
-
 		const result = await this._client.file.read({ path });
-
-		if (!result) {
-			return '';
-		}
-
-		// FileContent has type "text" and content string
-		if (result.type === 'text') {
-			return result.content || '';
-		}
-		return '';
+		return result?.content || '';
 	}
 
 	async searchFiles(query: string, type?: 'file' | 'directory'): Promise<string[]> {
 		if (!this._client) {
-			return [];
+			throw new Error('Not connected to Opencode');
 		}
-
-		const result = await this._client.find.files({
-			query,
-			dirs: type === 'directory' ? 'true' : type === 'file' ? 'false' : undefined
-		});
-
+		const dirs = type === 'directory' ? 'true' : type === 'file' ? 'false' : undefined;
+		const result = await this._client.find.files({ query, dirs });
 		return Array.isArray(result) ? result : [];
 	}
 
 	async searchText(pattern: string): Promise<Array<{ path: string; lines: number[] }>> {
 		if (!this._client) {
-			return [];
-		}
-
-		const result = await this._client.find.text({ pattern });
-		const matches = Array.isArray(result) ? result : [];
-
-		return matches.map((match: any) => ({
-			path: match.path?.text || '',
-			lines: [match.line_number || 0]
-		}));
-	}
-
-	async fetchWeb(url: string): Promise<string> {
-		if (!this._client) {
 			throw new Error('Not connected to Opencode');
 		}
-		// This would use the webfetch tool via a session command
-		// For now, just return empty - this can be implemented later
-		return '';
+		const result = await this._client.find.text({ pattern });
+		if (!Array.isArray(result)) return [];
+		const grouped = new Map<string, number[]>();
+		for (const match of result) {
+			const path = match?.path?.text || '';
+			if (!grouped.has(path)) {
+				grouped.set(path, []);
+			}
+			grouped.get(path)!.push(match.line_number);
+		}
+		return Array.from(grouped.entries()).map(([path, lines]) => ({ path, lines }));
 	}
 
 	async approvePermission(sessionId: string, permissionId: string, approved: boolean): Promise<void> {
 		if (!this._client) {
 			throw new Error('Not connected to Opencode');
 		}
-
 		await this._client.postSessionIdPermissionsPermissionId(
 			{ id: sessionId, permissionID: permissionId },
 			{ response: approved ? 'once' : 'reject' }
@@ -601,51 +556,48 @@ class OpencodeService extends Disposable implements IOpencodeService {
 		}
 
 		try {
-			const events = await this._client.event.subscribe();
-			this._eventStream = events.stream as any;
+			const { stream } = await this._client.event.subscribe();
 
-			// Process events asynchronously
+			// Process events in background
 			(async () => {
-				for await (const event of events.stream) {
-					const eventType = event.type as string;
-					const eventProps = (event as any).properties || {};
+				try {
+					for await (const event of stream) {
+						this._onDidReceiveEvent.fire(event);
 
-					this._onDidReceiveEvent.fire({
-						type: eventType,
-						properties: eventProps
-					});
-
-					// Handle specific event types
-					if (eventType === 'file.edited' || eventType === 'command.executed') {
-						// Tool was used (file edit or command execution)
-						this._onDidToolCall.fire({
-							name: eventType === 'file.edited' ? 'edit' : 'command',
-							params: eventProps,
-							status: 'completed'
-						});
-					} else if (eventType === 'permission.updated' || eventType === 'permission.replied') {
-						// Permission event
-						const permission = eventProps.permission || {};
-						this._onDidPermissionRequest.fire({
-							id: permission.id || permission.permissionID || '',
-							type: permission.type || 'edits',
-							action: permission.action || '',
-							approved: eventType === 'permission.replied' ? (eventProps.response === 'once' || eventProps.response === 'always') : null
-						});
+						// Handle specific event types
+						if (event.type === 'tool.call' || event.type === 'tool.used') {
+							this._onDidToolCall.fire({
+								name: event.properties?.tool || event.properties?.name || 'unknown',
+								params: event.properties?.params || {},
+								status: 'running'
+							});
+						} else if (event.type === 'permission.required') {
+							this._onDidPermissionRequest.fire({
+								id: event.properties?.id || '',
+								type: event.properties?.type || 'edits',
+								action: event.properties?.action || '',
+								approved: null
+							});
+						}
 					}
+				} catch (err) {
+					console.error('[Opencode] Event stream error:', err);
 				}
-			})().catch(err => {
-				console.error('Error processing Opencode events:', err);
-			});
-		} catch (error) {
-			console.error('Failed to subscribe to Opencode events:', error);
+			})();
+		} catch (err) {
+			console.error('[Opencode] Failed to subscribe to events:', err);
 		}
 	}
 
-	private async refreshSessions(): Promise<void> {
-		this._sessions = await this.listSessions();
-		this._onDidSessionsChange.fire();
+	async fetchWeb(url: string): Promise<string> {
+		if (!this._client) {
+			throw new Error('Not connected to Opencode');
+		}
+
+		// Use the shell command to fetch URL
+		const result = await this.runShell(this._currentSessionId || '', `curl -s "${url}"`);
+		return result;
 	}
 }
 
-registerSingleton(IOpencodeService, OpencodeService, InstantiationType.Delayed);
+registerSingleton(IOpencodeService, OpencodeService, InstantiationType.Eager);

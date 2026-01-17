@@ -775,25 +775,18 @@ class ChatThreadService extends Disposable implements IChatThreadService {
 		callThisToolFirst?: ToolMessage<ToolName> & { type: 'tool_request' }
 	}) {
 		// OPENCODE SDK DEEP INTEGRATION - Replaces Void agents completely
+		// OpencodeService now automatically manages the server via main process IPC
+		// It auto-detects workspace changes and restarts server with correct directory
 
-		// Get the current workspace folder
-		const workspaceFolders = this._workspaceContextService.getWorkspace().folders;
-		const workspaceDir = workspaceFolders[0]?.uri.fsPath;
-		console.log(`[Opencode] Using workspace directory: ${workspaceDir || 'none'}`);
-
-		// Ensure Opencode is connected
+		// Ensure Opencode is connected (will auto-start server with current workspace)
 		if (!this._opencodeService.isConnected) {
 			try {
-				// Pass workspace directory to connect (for server to use correct project context)
-				await this._opencodeService.connect({
-					baseUrl: 'http://localhost:4096',
-					workspaceDir: workspaceDir
-				});
+				await this._opencodeService.connect();
 			} catch (error) {
 				this._setStreamState(threadId, {
 					isRunning: undefined,
 					error: {
-						message: `Failed to connect to Opencode: ${error instanceof Error ? error.message : String(error)}. Make sure Opencode server is running on localhost:4096`,
+						message: `Failed to connect to Opencode: ${error instanceof Error ? error.message : String(error)}`,
 						fullError: error instanceof Error ? error : null
 					}
 				});
