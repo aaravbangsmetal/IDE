@@ -340,10 +340,11 @@ export class CodeApplication extends Disposable {
 
 		//#endregion
 
-		//#region Allow CORS for the PRSS CDN
+		//#region Allow CORS for the PRSS CDN and Opencode localhost server
 
 		// https://github.com/microsoft/vscode-remote-release/issues/9246
 		session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+			// Allow CORS for PRSS CDN
 			if (details.url.startsWith('https://vscode.download.prss.microsoft.com/')) {
 				const responseHeaders = details.responseHeaders ?? Object.create(null);
 
@@ -353,7 +354,28 @@ export class CodeApplication extends Disposable {
 				}
 			}
 
+			// Allow CORS for Opencode localhost server (port 4096)
+			if (details.url.startsWith('http://localhost:4096/') || details.url.startsWith('http://127.0.0.1:4096/')) {
+				const responseHeaders = details.responseHeaders ?? Object.create(null);
+
+				// Add CORS headers for all responses
+				responseHeaders['Access-Control-Allow-Origin'] = ['*'];
+				responseHeaders['Access-Control-Allow-Methods'] = ['GET, POST, PUT, DELETE, OPTIONS'];
+				responseHeaders['Access-Control-Allow-Headers'] = ['Content-Type, Accept, Authorization'];
+				return callback({ cancel: false, responseHeaders });
+			}
+
 			return callback({ cancel: false });
+		});
+
+		// Handle preflight OPTIONS requests for Opencode
+		session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
+			if ((details.url.startsWith('http://localhost:4096/') || details.url.startsWith('http://127.0.0.1:4096/')) && details.method === 'OPTIONS') {
+				// Allow preflight requests
+				callback({ cancel: false });
+			} else {
+				callback({ cancel: false });
+			}
 		});
 
 		//#endregion
