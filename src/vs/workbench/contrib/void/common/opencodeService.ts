@@ -174,8 +174,9 @@ class OpencodeService extends Disposable implements IOpencodeService {
 			postSessionIdPermissionsPermissionId: (path, body) => apiCall('POST', `/session/${path.id}/permissions/${path.permissionID}`, body),
 			event: {
 				subscribe: async () => {
-					// SSE subscription endpoint: /event
-					const url = `${baseUrl}/event`;
+					// SSE subscription endpoint: /global/event (for streaming events)
+					const url = `${baseUrl}/global/event`;
+					console.log(`[Opencode] Subscribing to SSE events at ${url}`);
 					const eventSource = new EventSource(url);
 					const stream: AsyncIterable<OpencodeEvent> = {
 						async *[Symbol.asyncIterator]() {
@@ -184,6 +185,7 @@ class OpencodeService extends Disposable implements IOpencodeService {
 							let reject: ((error: any) => void) | null = null;
 
 							eventSource.onmessage = (e) => {
+								console.log('[Opencode] SSE event received:', e.data?.substring(0, 200));
 								try {
 									const event = JSON.parse(e.data) as OpencodeEvent;
 									if (resolve) {
@@ -193,6 +195,7 @@ class OpencodeService extends Disposable implements IOpencodeService {
 										events.push(event);
 									}
 								} catch (err) {
+									console.error('[Opencode] SSE parse error:', err);
 									if (reject) {
 										reject(err);
 										reject = null;
@@ -201,6 +204,7 @@ class OpencodeService extends Disposable implements IOpencodeService {
 							};
 
 							eventSource.onerror = (err) => {
+								console.error('[Opencode] SSE error:', err);
 								if (reject) {
 									reject(err);
 									reject = null;
@@ -424,32 +428,77 @@ class OpencodeService extends Disposable implements IOpencodeService {
 			enhancedPrompt = `${prompt}\n\nNote: You have access to the webfetch tool to search the web and fetch web pages. Use it when you need current information from the internet.`;
 		}
 
-		const response = await this._client.session.prompt(
-			{ id: sessionId },
-			{
+		// Send prompt via the API
+		const url = `${this._baseUrl}/session/${sessionId}/message`;
+		console.log(`[Opencode API] POST ${url}`);
+
+		// Fire initial streaming event to show "thinking"
+		this._onDidReceiveEvent.fire({
+			type: 'message.streaming',
+			properties: { text: '', thinking: true }
+		});
+
+		const response = await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Accept': 'application/json'
+			},
+			mode: 'cors',
+			credentials: 'omit',
+			body: JSON.stringify({
 				noReply: options?.noReply ?? false,
 				parts: [{ type: 'text', text: enhancedPrompt }]
+			})
+		});
+
+		if (!response.ok) {
+			throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+		}
+
+		// Check if we got HTML instead of JSON
+		const contentType = response.headers.get('content-type') || '';
+		if (contentType.includes('text/html')) {
+			throw new Error(`Server returned HTML instead of JSON. Make sure 'opencode serve' is running (not 'opencode web').`);
+		}
+
+		// Get the full response
+		const text = await response.text();
+		console.log('[Opencode] Prompt response:', text.substring(0, 500));
+
+		// Parse and extract text from response
+		let resultText = '';
+		try {
+			const parsed = JSON.parse(text);
+
+			// Response format can be:
+			// 1. { info: {...}, parts: [...] }
+			// 2. { parts: [...] }
+			// 3. { content: "..." }
+			// 4. Array of parts
+			if (parsed?.parts) {
+				const textParts = parsed.parts.filter((p: any) => p.type === 'text');
+				resultText = textParts.map((p: any) => p.text || '').join('\n');
+			} else if (parsed?.info?.parts) {
+				const textParts = parsed.info.parts.filter((p: any) => p.type === 'text');
+				resultText = textParts.map((p: any) => p.text || '').join('\n');
+			} else if (parsed?.content) {
+				resultText = parsed.content;
+			} else if (Array.isArray(parsed)) {
+				const textParts = parsed.filter((p: any) => p.type === 'text');
+				resultText = textParts.map((p: any) => p.text || '').join('\n');
 			}
-		);
-
-		console.log('[Opencode] Prompt response:', JSON.stringify(response).substring(0, 500));
-
-		// Extract text from response
-		// Response format: { info: AssistantMessage, parts: Part[] }
-		if (response?.parts) {
-			const textParts = response.parts.filter((p: any) => p.type === 'text');
-			return textParts.map((p: any) => p.text || '').join('\n');
-		}
-		// Alternative format: { content: string } or array of parts
-		if (response?.content) {
-			return response.content;
-		}
-		if (Array.isArray(response)) {
-			const textParts = response.filter((p: any) => p.type === 'text');
-			return textParts.map((p: any) => p.text || '').join('\n');
+		} catch {
+			resultText = text;
 		}
 
-		return '';
+		// Fire completion event
+		this._onDidReceiveEvent.fire({
+			type: 'message.completed',
+			properties: { text: resultText }
+		});
+
+		return resultText;
 	}
 
 	async sendCommand(sessionId: string, command: string): Promise<void> {

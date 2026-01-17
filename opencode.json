@@ -1,20 +1,11 @@
 {
-  "server": {
-    "port": 4096,
-    "hostname": "127.0.0.1",
-    "cors": [
-      "vscode-file://vscode-app",
-      "file://",
-      "http://localhost:*",
-      "http://127.0.0.1:*",
-      "*"
-    ]
-  },
+  "model": "xai/grok-3-fast",
   "tools": {
     "webfetch": true,
     "edit": true,
     "write": true,
-    "bash": true
+    "bash": true,
+    "read": true
   },
   "$schema": "https://opencode.ai/config.json"
 }

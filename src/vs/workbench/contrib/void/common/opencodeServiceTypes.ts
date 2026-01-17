@@ -26,6 +26,7 @@ export interface OpencodeConfig {
 	hostname?: string;
 	port?: number;
 	baseUrl?: string;
+	workspaceDir?: string;
 }
 
 export interface OpencodeToolCall {

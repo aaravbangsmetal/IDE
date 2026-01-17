@@ -15,9 +15,10 @@ export const IOpencodeMainService = createDecorator<IOpencodeMainService>('openc
 
 export interface IOpencodeMainService {
 	readonly _serviceBrand: undefined;
-	startServer(): Promise<{ url: string; port: number }>;
+	startServer(workingDirectory?: string): Promise<{ url: string; port: number }>;
 	stopServer(): Promise<void>;
 	isServerRunning(): boolean;
+	restartWithDirectory(workingDirectory: string): Promise<{ url: string; port: number }>;
 }
 
 export class OpencodeMainService extends Disposable implements IOpencodeMainService {
@@ -40,9 +41,18 @@ export class OpencodeMainService extends Disposable implements IOpencodeMainServ
 		}, 500); // Small delay to let app initialize
 	}
 
-	async startServer(): Promise<{ url: string; port: number }> {
-		if (this._serverProcess) {
+	private _currentWorkingDirectory: string | undefined;
+
+	async startServer(workingDirectory?: string): Promise<{ url: string; port: number }> {
+		// If server is already running with same directory, reuse it
+		if (this._serverProcess && (!workingDirectory || workingDirectory === this._currentWorkingDirectory)) {
 			return { url: this._serverUrl || `http://localhost:${this._serverPort}`, port: this._serverPort };
+		}
+
+		// If running with different directory, restart
+		if (this._serverProcess && workingDirectory && workingDirectory !== this._currentWorkingDirectory) {
+			console.log(`[Opencode] Restarting server for new directory: ${workingDirectory}`);
+			await this.stopServer();
 		}
 
 		try {
@@ -58,8 +68,13 @@ export class OpencodeMainService extends Disposable implements IOpencodeMainServ
 				throw new Error(errorMsg);
 			}
 
+			// Use provided directory or fallback to cwd
+			const cwd = workingDirectory || process.cwd();
+			this._currentWorkingDirectory = cwd;
+
 			console.log(`[Opencode] Starting API server with: ${opencodePath} serve`);
-			process.stdout.write(`[Opencode] Starting API server (not web UI) with: ${opencodePath}\n`);
+			console.log(`[Opencode] Working directory: ${cwd}`);
+			process.stdout.write(`[Opencode] Starting API server in ${cwd}\n`);
 
 			// Start the API server with 'serve' command (not 'web' which gives HTML UI)
 			// 'opencode serve' exposes JSON API at /global/health, /session, etc.
@@ -79,7 +94,7 @@ export class OpencodeMainService extends Disposable implements IOpencodeMainServ
 				env: {
 					...process.env,
 				},
-				cwd: process.cwd() // Use current working directory for config
+				cwd: cwd // Use the specified working directory
 			});
 
 			this._serverProcess.stdout?.on('data', (data: Buffer) => {
@@ -135,7 +150,15 @@ export class OpencodeMainService extends Disposable implements IOpencodeMainServ
 			this._serverProcess.kill();
 			this._serverProcess = undefined;
 			this._serverUrl = undefined;
+			this._currentWorkingDirectory = undefined;
 		}
+	}
+
+	async restartWithDirectory(workingDirectory: string): Promise<{ url: string; port: number }> {
+		console.log(`[Opencode] Restart requested for directory: ${workingDirectory}`);
+		await this.stopServer();
+		await this._killExistingServer();
+		return this.startServer(workingDirectory);
 	}
 
 	private async _killExistingServer(): Promise<void> {

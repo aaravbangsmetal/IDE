@@ -776,10 +776,19 @@ class ChatThreadService extends Disposable implements IChatThreadService {
 	}) {
 		// OPENCODE SDK DEEP INTEGRATION - Replaces Void agents completely
 
+		// Get the current workspace folder
+		const workspaceFolders = this._workspaceContextService.getWorkspace().folders;
+		const workspaceDir = workspaceFolders[0]?.uri.fsPath;
+		console.log(`[Opencode] Using workspace directory: ${workspaceDir || 'none'}`);
+
 		// Ensure Opencode is connected
 		if (!this._opencodeService.isConnected) {
 			try {
-				await this._opencodeService.connect();
+				// Pass workspace directory to connect (for server to use correct project context)
+				await this._opencodeService.connect({
+					baseUrl: 'http://localhost:4096',
+					workspaceDir: workspaceDir
+				});
 			} catch (error) {
 				this._setStreamState(threadId, {
 					isRunning: undefined,
@@ -913,10 +922,26 @@ class ChatThreadService extends Disposable implements IChatThreadService {
 				interrupt: interruptor
 			});
 
+			// Send prompt and get streaming response
+			// The response comes back progressively, so we update the UI as it arrives
 			const responseText = await this._opencodeService.sendPrompt(opencodeSessionId, userPrompt);
 
 			// Use the response from sendPrompt, or fallback to event-gathered text
 			fullText = responseText || fullText;
+
+			// Update stream state with partial content as it arrives
+			if (fullText) {
+				// Show the text progressively in the UI
+				this._setStreamState(threadId, {
+					isRunning: 'LLM',
+					llmInfo: {
+						displayContentSoFar: fullText,
+						reasoningSoFar: fullReasoning,
+						toolCallSoFar: currentToolCall
+					},
+					interrupt: interruptor
+				});
+			}
 
 			// Add assistant message to thread
 			if (fullText) {
