@@ -913,11 +913,10 @@ class ChatThreadService extends Disposable implements IChatThreadService {
 				interrupt: interruptor
 			});
 
-			await this._opencodeService.sendPrompt(opencodeSessionId, userPrompt);
+			const responseText = await this._opencodeService.sendPrompt(opencodeSessionId, userPrompt);
 
-			// Wait a bit for response (Opencode handles tool calls internally)
-			// In production, you'd wait for 'message.completed' event
-			await new Promise(resolve => setTimeout(resolve, 500));
+			// Use the response from sendPrompt, or fallback to event-gathered text
+			fullText = responseText || fullText;
 
 			// Add assistant message to thread
 			if (fullText) {

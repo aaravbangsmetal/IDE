@@ -69,7 +69,7 @@ export interface IOpencodeService {
 	setCurrentSession(sessionId: string | undefined): void;
 
 	// Prompt methods
-	sendPrompt(sessionId: string, prompt: string, options?: { noReply?: boolean }): Promise<void>;
+	sendPrompt(sessionId: string, prompt: string, options?: { noReply?: boolean }): Promise<string>;
 	sendCommand(sessionId: string, command: string): Promise<void>;
 	runShell(sessionId: string, command: string): Promise<string>;
 
@@ -410,7 +410,7 @@ class OpencodeService extends Disposable implements IOpencodeService {
 		}
 	}
 
-	async sendPrompt(sessionId: string, prompt: string, options?: { noReply?: boolean }): Promise<void> {
+	async sendPrompt(sessionId: string, prompt: string, options?: { noReply?: boolean }): Promise<string> {
 		if (!this._client) {
 			throw new Error('Not connected to Opencode');
 		}
@@ -424,13 +424,32 @@ class OpencodeService extends Disposable implements IOpencodeService {
 			enhancedPrompt = `${prompt}\n\nNote: You have access to the webfetch tool to search the web and fetch web pages. Use it when you need current information from the internet.`;
 		}
 
-		await this._client.session.prompt(
+		const response = await this._client.session.prompt(
 			{ id: sessionId },
 			{
 				noReply: options?.noReply ?? false,
 				parts: [{ type: 'text', text: enhancedPrompt }]
 			}
 		);
+
+		console.log('[Opencode] Prompt response:', JSON.stringify(response).substring(0, 500));
+
+		// Extract text from response
+		// Response format: { info: AssistantMessage, parts: Part[] }
+		if (response?.parts) {
+			const textParts = response.parts.filter((p: any) => p.type === 'text');
+			return textParts.map((p: any) => p.text || '').join('\n');
+		}
+		// Alternative format: { content: string } or array of parts
+		if (response?.content) {
+			return response.content;
+		}
+		if (Array.isArray(response)) {
+			const textParts = response.filter((p: any) => p.type === 'text');
+			return textParts.map((p: any) => p.text || '').join('\n');
+		}
+
+		return '';
 	}
 
 	async sendCommand(sessionId: string, command: string): Promise<void> {
