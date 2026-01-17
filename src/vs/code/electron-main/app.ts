@@ -129,10 +129,12 @@ import { IMetricsService } from '../../workbench/contrib/void/common/metricsServ
 import { IVoidUpdateService } from '../../workbench/contrib/void/common/voidUpdateService.js';
 import { MetricsMainService } from '../../workbench/contrib/void/electron-main/metricsMainService.js';
 import { VoidMainUpdateService } from '../../workbench/contrib/void/electron-main/voidUpdateMainService.js';
+import { OpencodeMainService, IOpencodeMainService } from '../../workbench/contrib/void/electron-main/opencodeMainService.js';
 import { LLMMessageChannel } from '../../workbench/contrib/void/electron-main/sendLLMMessageChannel.js';
 import { VoidSCMService } from '../../workbench/contrib/void/electron-main/voidSCMMainService.js';
 import { IVoidSCMService } from '../../workbench/contrib/void/common/voidSCMTypes.js';
 import { MCPChannel } from '../../workbench/contrib/void/electron-main/mcpChannel.js';
+import { OpencodeMainService, IOpencodeMainService } from '../../workbench/contrib/void/electron-main/opencodeMainService.js';
 // NAP Integration Services
 import { INapAuthService } from '../../workbench/contrib/void/common/napAuthService.js';
 import { NapAuthMainService } from '../../workbench/contrib/void/electron-main/napAuthMainService.js';
@@ -1114,6 +1116,7 @@ export class CodeApplication extends Disposable {
 		services.set(IMetricsService, new SyncDescriptor(MetricsMainService, undefined, false));
 		services.set(IVoidUpdateService, new SyncDescriptor(VoidMainUpdateService, undefined, false));
 		services.set(IVoidSCMService, new SyncDescriptor(VoidSCMService, undefined, false));
+		services.set(IOpencodeMainService, new SyncDescriptor(OpencodeMainService, undefined, false));
 
 		// NAP Integration Services (Auth must be first as others depend on it)
 		services.set(INapAuthService, new SyncDescriptor(NapAuthMainService, undefined, false));
@@ -1268,6 +1271,10 @@ export class CodeApplication extends Disposable {
 		// Void added this
 		const mcpChannel = new MCPChannel();
 		mainProcessElectronServer.registerChannel('void-channel-mcp', mcpChannel);
+
+		// Opencode service channel (auto-starts server)
+		const opencodeChannel = ProxyChannel.fromService(accessor.get(IOpencodeMainService), disposables);
+		mainProcessElectronServer.registerChannel('void-channel-opencode', opencodeChannel);
 
 		// NAP Integration Channels
 		const napAuthChannel = ProxyChannel.fromService(accessor.get(INapAuthService), disposables);
