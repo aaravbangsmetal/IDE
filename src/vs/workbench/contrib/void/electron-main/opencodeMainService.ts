@@ -16,6 +16,8 @@ export interface IOpencodeMainService {
 	startServer(): Promise<{ url: string; port: number }>;
 	stopServer(): Promise<void>;
 	isServerRunning(): boolean;
+	// Proxy HTTP requests to avoid CORS issues
+	proxyRequest(method: string, path: string, body?: any): Promise<any>;
 }
 
 export class OpencodeMainService extends Disposable implements IOpencodeMainService {
@@ -56,13 +58,16 @@ export class OpencodeMainService extends Disposable implements IOpencodeMainServ
 			console.log(`[Opencode] Starting server with: ${opencodePath}`);
 			process.stdout.write(`[Opencode] Starting server with: ${opencodePath}\n`);
 
-			// Start the server
+			// Start the server with CORS enabled
+			// Note: Opencode server should handle CORS automatically, but we can pass config via env
 			this._serverProcess = spawn(opencodePath, ['serve', '--hostname', '127.0.0.1', '--port', String(this._serverPort)], {
 				detached: false,
 				stdio: ['ignore', 'pipe', 'pipe'],
 				env: {
 					...process.env,
-					// Pass config via environment variable if needed
+					// Enable CORS for browser access
+					OPENCODE_CORS_ENABLED: 'true',
+					OPENCODE_ALLOW_ORIGIN: '*', // Allow all origins for localhost
 				}
 			});
 
@@ -172,5 +177,49 @@ export class OpencodeMainService extends Disposable implements IOpencodeMainServ
 		} catch {
 			return false;
 		}
+	}
+
+	async proxyRequest(method: string, path: string, body?: any): Promise<any> {
+		const url = this._serverUrl || `http://127.0.0.1:${this._serverPort}`;
+		const fullUrl = `${url}${path}`;
+
+		return new Promise((resolve, reject) => {
+			const http = require('http');
+			const urlObj = require('url').parse(fullUrl);
+
+			const options = {
+				hostname: urlObj.hostname,
+				port: urlObj.port || this._serverPort,
+				path: urlObj.path,
+				method: method,
+				headers: {
+					'Content-Type': 'application/json',
+				}
+			};
+
+			const req = http.request(options, (res: any) => {
+				let data = '';
+				res.on('data', (chunk: Buffer) => {
+					data += chunk.toString();
+				});
+				res.on('end', () => {
+					try {
+						const json = JSON.parse(data);
+						resolve(json);
+					} catch {
+						resolve(data);
+					}
+				});
+			});
+
+			req.on('error', (err: Error) => {
+				reject(err);
+			});
+
+			if (body) {
+				req.write(JSON.stringify(body));
+			}
+			req.end();
+		});
 	}
 }

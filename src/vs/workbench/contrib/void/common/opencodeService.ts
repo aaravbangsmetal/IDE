@@ -7,7 +7,10 @@ import { Emitter, Event } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 import { registerSingleton, InstantiationType } from '../../../../platform/instantiation/common/extensions.js';
+import { IMainProcessService } from '../../../../platform/ipc/common/mainProcessService.js';
+import { ProxyChannel } from '../../../../base/parts/ipc/common/ipc.js';
 import type { OpencodeSessionInfo, OpencodeEvent, OpencodeConfig, OpencodeToolCall, OpencodePermission } from './opencodeServiceTypes.js';
+import type { IOpencodeMainService } from '../electron-main/opencodeMainService.js';
 
 // Simple HTTP client for Opencode API (using fetch directly since SDK is ES modules)
 interface OpencodeHTTPClient {
@@ -102,13 +105,23 @@ class OpencodeService extends Disposable implements IOpencodeService {
 		baseUrl: 'http://localhost:4096'
 	};
 
-	// Create HTTP client wrapper using fetch
+	// Create HTTP client wrapper using main process proxy to avoid CORS
 	private _createHTTPClient(baseUrl: string): OpencodeHTTPClient {
 		const apiCall = async (method: string, path: string, body?: any): Promise<any> => {
+			// Use main process proxy to avoid CORS issues
+			if (this._mainService) {
+				return this._mainService.proxyRequest(method, path, body);
+			}
+			// Fallback to direct fetch (will fail with CORS in browser)
 			const url = `${baseUrl}${path}`;
 			const options: RequestInit = {
 				method,
-				headers: { 'Content-Type': 'application/json' }
+				headers: {
+					'Content-Type': 'application/json',
+					'Accept': 'application/json'
+				},
+				mode: 'cors',
+				credentials: 'omit'
 			};
 			if (body) {
 				options.body = JSON.stringify(body);
@@ -216,8 +229,12 @@ class OpencodeService extends Disposable implements IOpencodeService {
 	private readonly _onDidPermissionRequest = this._register(new Emitter<OpencodePermission>());
 	readonly onDidPermissionRequest = this._onDidPermissionRequest.event;
 
-	constructor() {
+	constructor(
+		@IMainProcessService private readonly mainProcessService: IMainProcessService
+	) {
 		super();
+		// Get main process service proxy
+		this._mainService = ProxyChannel.toService<IOpencodeMainService>(mainProcessService.getChannel('void-channel-opencode'));
 	}
 
 	get isConnected(): boolean {
