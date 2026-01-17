@@ -56,17 +56,22 @@ export class OpencodeMainService extends Disposable implements IOpencodeMainServ
 				throw new Error(errorMsg);
 			}
 
-			console.log(`[Opencode] Starting server with: ${opencodePath}`);
-			process.stdout.write(`[Opencode] Starting server with: ${opencodePath}\n`);
+			console.log(`[Opencode] Starting API server with: ${opencodePath} serve`);
+			process.stdout.write(`[Opencode] Starting API server (not web UI) with: ${opencodePath}\n`);
 
-			// Start the server with CORS enabled for all origins
-			// Use 'serve' command with --cors '*' for browser access
-			this._serverProcess = spawn(opencodePath, [
-				'serve',
-				'--hostname', '0.0.0.0',  // Listen on all interfaces
+			// Start the API server with 'serve' command (not 'web' which gives HTML UI)
+			// 'opencode serve' exposes JSON API at /global/health, /session, etc.
+			// 'opencode web' is the web UI which returns HTML (wrong for API access)
+			const args = [
+				'serve',  // API server mode (JSON endpoints)
+				'--hostname', '127.0.0.1',  // Listen on localhost
 				'--port', String(this._serverPort),
-				'--cors', '*'  // Allow all origins
-			], {
+				'--cors', '*'  // Allow all origins for browser access
+			];
+
+			console.log(`[Opencode] Command: ${opencodePath} ${args.join(' ')}`);
+
+			this._serverProcess = spawn(opencodePath, args, {
 				detached: false,
 				stdio: ['ignore', 'pipe', 'pipe'],
 				env: {
@@ -182,17 +187,42 @@ export class OpencodeMainService extends Disposable implements IOpencodeMainServ
 	private async _checkServerHealth(url: string): Promise<boolean> {
 		try {
 			const http = require('http');
+			// API endpoint is /global/health for opencode serve
 			return new Promise((resolve) => {
-				const req = http.get(`${url}/health`, { timeout: 2000 }, (res: any) => {
-					resolve(res.statusCode === 200);
+				const req = http.get(`${url}/global/health`, { timeout: 3000 }, (res: any) => {
+					let data = '';
+					res.on('data', (chunk: Buffer) => {
+						data += chunk.toString();
+					});
+					res.on('end', () => {
+						// Check if response is JSON (API) not HTML (web UI)
+						if (data.includes('<!doctype') || data.includes('<html')) {
+							console.log('[Opencode] Server returned HTML - wrong mode (web UI instead of API)');
+							resolve(false);
+							return;
+						}
+						try {
+							const json = JSON.parse(data);
+							resolve(json.healthy === true || res.statusCode === 200);
+						} catch {
+							// If not JSON, might be wrong server
+							console.log('[Opencode] Server response is not JSON:', data.substring(0, 100));
+							resolve(false);
+						}
+					});
 				});
-				req.on('error', () => resolve(false));
+				req.on('error', (err: Error) => {
+					console.log('[Opencode] Health check error:', err.message);
+					resolve(false);
+				});
 				req.on('timeout', () => {
+					console.log('[Opencode] Health check timeout');
 					req.destroy();
 					resolve(false);
 				});
 			});
-		} catch {
+		} catch (err) {
+			console.log('[Opencode] Health check exception:', err);
 			return false;
 		}
 	}

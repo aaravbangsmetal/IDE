@@ -103,10 +103,12 @@ class OpencodeService extends Disposable implements IOpencodeService {
 	};
 
 	// Create HTTP client wrapper using direct fetch
-	// Server is started with --cors flag to allow browser access
+	// Server is started with `opencode serve` which exposes JSON API endpoints
+	// API paths follow the pattern: /global/*, /session/*, /file/*, /find/*
 	private _createHTTPClient(baseUrl: string): OpencodeHTTPClient {
 		const apiCall = async (method: string, path: string, body?: any): Promise<any> => {
 			const url = `${baseUrl}${path}`;
+			console.log(`[Opencode API] ${method} ${url}`);
 			const options: RequestInit = {
 				method,
 				headers: {
@@ -120,30 +122,58 @@ class OpencodeService extends Disposable implements IOpencodeService {
 				options.body = JSON.stringify(body);
 			}
 			const response = await fetch(url, options);
+			const contentType = response.headers.get('content-type') || '';
+
+			// Check if we got HTML instead of JSON (wrong server/endpoint)
+			if (contentType.includes('text/html')) {
+				throw new Error(`Server returned HTML instead of JSON. Make sure 'opencode serve' is running (not 'opencode web'). URL: ${url}`);
+			}
+
 			if (!response.ok) {
 				throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 			}
-			return response.json();
+
+			// Handle empty responses
+			const text = await response.text();
+			if (!text) {
+				return { data: null };
+			}
+
+			try {
+				return JSON.parse(text);
+			} catch (e) {
+				throw new Error(`Invalid JSON response: ${text.substring(0, 100)}...`);
+			}
 		};
 
 		return {
 			global: {
-				health: () => apiCall('GET', '/health')
+				// API endpoint: GET /global/health
+				health: () => apiCall('GET', '/global/health')
 			},
 			session: {
+				// API endpoint: GET /session
 				list: () => apiCall('GET', '/session'),
+				// API endpoint: POST /session
 				create: (body) => apiCall('POST', '/session', body),
+				// API endpoint: GET /session/:id
 				get: (path) => apiCall('GET', `/session/${path.id}`),
+				// API endpoint: DELETE /session/:id
 				delete: (path) => apiCall('DELETE', `/session/${path.id}`),
+				// API endpoint: POST /session/:id/prompt
 				prompt: (path, body) => apiCall('POST', `/session/${path.id}/prompt`, body),
+				// API endpoint: POST /session/:id/command
 				command: (path, body) => apiCall('POST', `/session/${path.id}/command`, body),
+				// API endpoint: POST /session/:id/shell
 				shell: (path, body) => apiCall('POST', `/session/${path.id}/shell`, body),
+				// API endpoint: GET /session/:id/message
 				messages: (path) => apiCall('GET', `/session/${path.id}/message`)
 			},
+			// API endpoint: POST /session/:id/permissions/:permissionId
 			postSessionIdPermissionsPermissionId: (path, body) => apiCall('POST', `/session/${path.id}/permissions/${path.permissionID}`, body),
 			event: {
 				subscribe: async () => {
-					// SSE subscription
+					// SSE subscription endpoint: /event
 					const url = `${baseUrl}/event`;
 					const eventSource = new EventSource(url);
 					const stream: AsyncIterable<OpencodeEvent> = {
@@ -192,10 +222,13 @@ class OpencodeService extends Disposable implements IOpencodeService {
 				}
 			},
 			file: {
+				// API endpoint: GET /file/content?path=...
 				read: (query) => apiCall('GET', `/file/content?path=${encodeURIComponent(query.path)}`)
 			},
 			find: {
+				// API endpoint: GET /find/file?query=...
 				files: (query) => apiCall('GET', `/find/file?query=${encodeURIComponent(query.query)}${query.dirs ? `&dirs=${query.dirs}` : ''}`),
+				// API endpoint: GET /find/text?pattern=...
 				text: (query) => apiCall('GET', `/find/text?pattern=${encodeURIComponent(query.pattern)}`)
 			}
 		};
