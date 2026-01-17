@@ -7,9 +7,12 @@ import { Emitter, Event } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 import { registerSingleton, InstantiationType } from '../../../../platform/instantiation/common/extensions.js';
-import { createOpencodeClient, type OpencodeClient } from '@opencode-ai/sdk/client';
-import { createOpencode } from '@opencode-ai/sdk';
+import { importAMDNodeModule } from '../../../../amdX.js';
 import type { OpencodeSessionInfo, OpencodeEvent, OpencodeConfig, OpencodeToolCall, OpencodePermission } from './opencodeServiceTypes.js';
+
+// Dynamic import types for Opencode SDK
+type OpencodeSDK = typeof import('@opencode-ai/sdk');
+type OpencodeSDKClient = typeof import('@opencode-ai/sdk/client');
 
 export const IOpencodeService = createDecorator<IOpencodeService>('opencodeService');
 
@@ -64,8 +67,10 @@ export interface IOpencodeService {
 class OpencodeService extends Disposable implements IOpencodeService {
 	declare readonly _serviceBrand: undefined;
 
-	private _client: OpencodeClient | undefined;
+	private _client: any | undefined; // OpencodeClient loaded dynamically
 	private _server: { url: string; close(): void } | undefined;
+	private _sdkClientModule: OpencodeSDKClient | undefined;
+	private _sdkModule: OpencodeSDK | undefined;
 	private _isConnected: boolean = false;
 	private _currentSessionId: string | undefined;
 	private _sessions: OpencodeSessionInfo[] = [];
@@ -144,19 +149,19 @@ class OpencodeService extends Disposable implements IOpencodeService {
 
 			// Start server programmatically if not running
 			try {
-				const { client, server } = await createOpencode({
+				const { client, server } = await this._sdkModule!.createOpencode({
 					hostname: this._config.hostname,
 					port: this._config.port,
 					config: {
 						// Enable webfetch tool for web search
 						tools: {
-							webfetch: { enabled: true },
-							edit: { enabled: true },
-							write: { enabled: true },
-							bash: { enabled: true }
+							webfetch: true,
+							edit: true,
+							write: true,
+							bash: true
 						},
 						network: { allowed: true }
-					}
+					} as any
 				});
 
 				this._server = server;
@@ -208,7 +213,7 @@ class OpencodeService extends Disposable implements IOpencodeService {
 		}
 
 		const sessions = await this._client.session.list();
-		return sessions.data.map(s => ({
+		return sessions.data.map((s: any) => ({
 			id: s.id,
 			title: s.title || 'Untitled',
 			createdAt: s.createdAt ? new Date(s.createdAt).getTime() : Date.now(),
