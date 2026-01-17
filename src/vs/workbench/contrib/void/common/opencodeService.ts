@@ -128,31 +128,51 @@ class OpencodeService extends Disposable implements IOpencodeService {
 			// Load SDK client module dynamically
 			if (!this._sdkClientModule) {
 				try {
+					console.log('[Opencode] Loading SDK module...');
 					this._sdkClientModule = await importAMDNodeModule<OpencodeSDKClient>('@opencode-ai/sdk', 'dist/client.js');
+					console.log('[Opencode] SDK module loaded successfully');
+					
+					// Verify the module has the expected exports
+					if (!this._sdkClientModule || typeof this._sdkClientModule.createOpencodeClient !== 'function') {
+						throw new Error('SDK module loaded but createOpencodeClient is not available');
+					}
 				} catch (loadError) {
+					console.error('[Opencode] SDK load error:', loadError);
 					throw new Error(`Failed to load Opencode SDK: ${loadError instanceof Error ? loadError.message : String(loadError)}. Make sure @opencode-ai/sdk is installed.`);
 				}
 			}
 
 			// Connect to existing Opencode server
 			// Note: We cannot start the server from browser context, it must be started manually
+			const serverUrl = this._config.baseUrl || `http://${this._config.hostname}:${this._config.port}`;
 			try {
+				console.log(`[Opencode] Connecting to server at ${serverUrl}...`);
 				this._client = this._sdkClientModule.createOpencodeClient({
-					baseUrl: this._config.baseUrl || `http://${this._config.hostname}:${this._config.port}`
+					baseUrl: serverUrl
 				});
 
 				// Test connection
+				console.log('[Opencode] Testing connection...');
 				const health = await this._client.global.health();
-				if (health.data.healthy) {
+				if (health.data?.healthy) {
 					this._isConnected = true;
 					await this.refreshSessions();
 					this._onDidConnect.fire();
-					console.log(`Connected to Opencode server at ${this._config.baseUrl || `http://${this._config.hostname}:${this._config.port}`}`);
+					console.log(`[Opencode] Connected successfully to ${serverUrl}`);
 					return;
+				} else {
+					throw new Error('Server health check returned unhealthy');
 				}
 			} catch (err) {
+				console.error('[Opencode] Connection error:', err);
 				const errorMessage = err instanceof Error ? err.message : String(err);
-				throw new Error(`Failed to connect to Opencode server at ${this._config.baseUrl || `http://${this._config.hostname}:${this._config.port}`}. Make sure the Opencode server is running. Start it with: npx @opencode-ai/cli`);
+				
+				// Check if it's a network error (server not running)
+				if (errorMessage.includes('fetch') || errorMessage.includes('network') || errorMessage.includes('ECONNREFUSED') || errorMessage.includes('Failed to fetch')) {
+					throw new Error(`Cannot connect to Opencode server at ${serverUrl}. The server is not running. Please start it with: opencode serve`);
+				}
+				
+				throw new Error(`Failed to connect to Opencode server at ${serverUrl}: ${errorMessage}. Make sure the Opencode server is running. Start it with: opencode serve`);
 			}
 		} catch (error) {
 			this._isConnected = false;
