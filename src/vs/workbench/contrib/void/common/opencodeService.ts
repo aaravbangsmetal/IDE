@@ -7,11 +7,35 @@ import { Emitter, Event } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 import { registerSingleton, InstantiationType } from '../../../../platform/instantiation/common/extensions.js';
-import { importAMDNodeModule } from '../../../../amdX.js';
 import type { OpencodeSessionInfo, OpencodeEvent, OpencodeConfig, OpencodeToolCall, OpencodePermission } from './opencodeServiceTypes.js';
 
-// Dynamic import types for Opencode SDK
-type OpencodeSDKClient = typeof import('@opencode-ai/sdk/client');
+// Simple HTTP client for Opencode API (using fetch directly since SDK is ES modules)
+interface OpencodeHTTPClient {
+	global: {
+		health(): Promise<{ data: { healthy: boolean; version?: string } }>;
+	};
+	session: {
+		list(): Promise<{ data: OpencodeSessionInfo[] }>;
+		create(body: { title?: string }): Promise<{ data: { id: string; title?: string; createdAt?: number; updatedAt?: number } }>;
+		get(path: { id: string }): Promise<{ data: OpencodeSessionInfo }>;
+		delete(path: { id: string }): Promise<{ data: boolean }>;
+		prompt(path: { id: string }, body: { parts: Array<{ type: string; text: string }>; noReply?: boolean }): Promise<any>;
+		command(path: { id: string }, body: { command: string; arguments: string }): Promise<any>;
+		shell(path: { id: string }, body: { command: string; agent: string }): Promise<{ data?: { parts?: Array<{ type: string; text?: string }> } }>;
+		messages(path: { id: string }): Promise<any>;
+	};
+	postSessionIdPermissionsPermissionId(path: { id: string; permissionID: string }, body: { response: 'once' | 'always' | 'reject' }): Promise<any>;
+	event: {
+		subscribe(): Promise<{ stream: AsyncIterable<OpencodeEvent> }>;
+	};
+	file: {
+		read(query: { path: string }): Promise<{ data?: { type: string; content: string } }>;
+	};
+	find: {
+		files(query: { query: string; dirs?: string }): Promise<{ data: string[] }>;
+		text(query: { pattern: string }): Promise<{ data: Array<{ path: { text: string }; line_number: number }> }>;
+	};
+}
 
 export const IOpencodeService = createDecorator<IOpencodeService>('opencodeService');
 
@@ -66,8 +90,8 @@ export interface IOpencodeService {
 class OpencodeService extends Disposable implements IOpencodeService {
 	declare readonly _serviceBrand: undefined;
 
-	private _client: any | undefined; // OpencodeClient loaded dynamically
-	private _sdkClientModule: OpencodeSDKClient | undefined;
+	private _client: OpencodeHTTPClient | undefined;
+	private _baseUrl: string = 'http://localhost:4096';
 	private _isConnected: boolean = false;
 	private _currentSessionId: string | undefined;
 	private _sessions: OpencodeSessionInfo[] = [];
@@ -77,6 +101,99 @@ class OpencodeService extends Disposable implements IOpencodeService {
 		port: 4096,
 		baseUrl: 'http://localhost:4096'
 	};
+
+	// Create HTTP client wrapper using fetch
+	private _createHTTPClient(baseUrl: string): OpencodeHTTPClient {
+		const apiCall = async (method: string, path: string, body?: any): Promise<any> => {
+			const url = `${baseUrl}${path}`;
+			const options: RequestInit = {
+				method,
+				headers: { 'Content-Type': 'application/json' }
+			};
+			if (body) {
+				options.body = JSON.stringify(body);
+			}
+			const response = await fetch(url, options);
+			if (!response.ok) {
+				throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+			}
+			return response.json();
+		};
+
+		return {
+			global: {
+				health: () => apiCall('GET', '/health')
+			},
+			session: {
+				list: () => apiCall('GET', '/session'),
+				create: (body) => apiCall('POST', '/session', body),
+				get: (path) => apiCall('GET', `/session/${path.id}`),
+				delete: (path) => apiCall('DELETE', `/session/${path.id}`),
+				prompt: (path, body) => apiCall('POST', `/session/${path.id}/prompt`, body),
+				command: (path, body) => apiCall('POST', `/session/${path.id}/command`, body),
+				shell: (path, body) => apiCall('POST', `/session/${path.id}/shell`, body),
+				messages: (path) => apiCall('GET', `/session/${path.id}/message`)
+			},
+			postSessionIdPermissionsPermissionId: (path, body) => apiCall('POST', `/session/${path.id}/permissions/${path.permissionID}`, body),
+			event: {
+				subscribe: async () => {
+					// SSE subscription
+					const url = `${baseUrl}/event`;
+					const eventSource = new EventSource(url);
+					const stream: AsyncIterable<OpencodeEvent> = {
+						async *[Symbol.asyncIterator]() {
+							const events: OpencodeEvent[] = [];
+							let resolve: ((value: OpencodeEvent) => void) | null = null;
+							let reject: ((error: any) => void) | null = null;
+
+							eventSource.onmessage = (e) => {
+								try {
+									const event = JSON.parse(e.data) as OpencodeEvent;
+									if (resolve) {
+										resolve(event);
+										resolve = null;
+									} else {
+										events.push(event);
+									}
+								} catch (err) {
+									if (reject) {
+										reject(err);
+										reject = null;
+									}
+								}
+							};
+
+							eventSource.onerror = (err) => {
+								if (reject) {
+									reject(err);
+									reject = null;
+								}
+							};
+
+							while (true) {
+								if (events.length > 0) {
+									yield events.shift()!;
+								} else {
+									yield new Promise<OpencodeEvent>((res, rej) => {
+										resolve = res;
+										reject = rej;
+									});
+								}
+							}
+						}
+					};
+					return { stream };
+				}
+			},
+			file: {
+				read: (query) => apiCall('GET', `/file/content?path=${encodeURIComponent(query.path)}`)
+			},
+			find: {
+				files: (query) => apiCall('GET', `/find/file?query=${encodeURIComponent(query.query)}${query.dirs ? `&dirs=${query.dirs}` : ''}`),
+				text: (query) => apiCall('GET', `/find/text?pattern=${encodeURIComponent(query.pattern)}`)
+			}
+		};
+	}
 
 	private readonly _onDidConnect = this._register(new Emitter<void>());
 	readonly onDidConnect = this._onDidConnect.event;
@@ -125,31 +242,14 @@ class OpencodeService extends Disposable implements IOpencodeService {
 				this._config = { ...this._config, ...config };
 			}
 
-			// Load SDK client module dynamically
-			if (!this._sdkClientModule) {
-				try {
-					console.log('[Opencode] Loading SDK module...');
-					this._sdkClientModule = await importAMDNodeModule<OpencodeSDKClient>('@opencode-ai/sdk', 'dist/client.js');
-					console.log('[Opencode] SDK module loaded successfully');
-
-					// Verify the module has the expected exports
-					if (!this._sdkClientModule || typeof this._sdkClientModule.createOpencodeClient !== 'function') {
-						throw new Error('SDK module loaded but createOpencodeClient is not available');
-					}
-				} catch (loadError) {
-					console.error('[Opencode] SDK load error:', loadError);
-					throw new Error(`Failed to load Opencode SDK: ${loadError instanceof Error ? loadError.message : String(loadError)}. Make sure @opencode-ai/sdk is installed.`);
-				}
-			}
-
-			// Connect to existing Opencode server
+			// Connect to existing Opencode server using HTTP client
 			// Note: We cannot start the server from browser context, it must be started manually
 			const serverUrl = this._config.baseUrl || `http://${this._config.hostname}:${this._config.port}`;
+			this._baseUrl = serverUrl;
+
 			try {
 				console.log(`[Opencode] Connecting to server at ${serverUrl}...`);
-				this._client = this._sdkClientModule.createOpencodeClient({
-					baseUrl: serverUrl
-				});
+				this._client = this._createHTTPClient(serverUrl);
 
 				// Test connection
 				console.log('[Opencode] Testing connection...');
@@ -195,12 +295,12 @@ class OpencodeService extends Disposable implements IOpencodeService {
 			throw new Error('Not connected to Opencode');
 		}
 
-		const session = await this._client.session.create({
-			body: { title: title || 'New Session' }
+		const result = await this._client.session.create({
+			title: title || 'New Session'
 		});
 
 		await this.refreshSessions();
-		return session.id;
+		return result.data.id;
 	}
 
 	async listSessions(): Promise<OpencodeSessionInfo[]> {
@@ -224,7 +324,7 @@ class OpencodeService extends Disposable implements IOpencodeService {
 		}
 
 		try {
-			const result = await this._client.session.get({ path: { id: sessionId } });
+			const result = await this._client.session.get({ id: sessionId });
 			if (!result.data) {
 				return undefined;
 			}
@@ -247,7 +347,7 @@ class OpencodeService extends Disposable implements IOpencodeService {
 		}
 
 		try {
-			const result = await this._client.session.delete({ path: { id: sessionId } });
+			const result = await this._client.session.delete({ id: sessionId });
 			if (result.data) {
 				await this.refreshSessions();
 				if (this._currentSessionId === sessionId) {
@@ -282,13 +382,13 @@ class OpencodeService extends Disposable implements IOpencodeService {
 			enhancedPrompt = `${prompt}\n\nNote: You have access to the webfetch tool to search the web and fetch web pages. Use it when you need current information from the internet.`;
 		}
 
-		await this._client.session.prompt({
-			path: { id: sessionId },
-			body: {
+		await this._client.session.prompt(
+			{ id: sessionId },
+			{
 				noReply: options?.noReply ?? false,
 				parts: [{ type: 'text', text: enhancedPrompt }]
 			}
-		});
+		);
 	}
 
 	async sendCommand(sessionId: string, command: string): Promise<void> {
@@ -296,10 +396,10 @@ class OpencodeService extends Disposable implements IOpencodeService {
 			throw new Error('Not connected to Opencode');
 		}
 
-		await this._client.session.command({
-			path: { id: sessionId },
-			body: { command, arguments: '' }
-		});
+		await this._client.session.command(
+			{ id: sessionId },
+			{ command, arguments: '' }
+		);
 	}
 
 	async runShell(sessionId: string, command: string): Promise<string> {
@@ -307,10 +407,10 @@ class OpencodeService extends Disposable implements IOpencodeService {
 			throw new Error('Not connected to Opencode');
 		}
 
-		const result = await this._client.session.shell({
-			path: { id: sessionId },
-			body: { command, agent: 'default' }
-		});
+		const result = await this._client.session.shell(
+			{ id: sessionId },
+			{ command, agent: 'default' }
+		);
 
 		// Shell returns AssistantMessage, extract text from parts
 		if (result.data?.parts) {
@@ -325,9 +425,7 @@ class OpencodeService extends Disposable implements IOpencodeService {
 			throw new Error('Not connected to Opencode');
 		}
 
-		const result = await this._client.file.read({
-			query: { path }
-		});
+		const result = await this._client.file.read({ path });
 
 		if (!result.data) {
 			return '';
@@ -346,10 +444,8 @@ class OpencodeService extends Disposable implements IOpencodeService {
 		}
 
 		const result = await this._client.find.files({
-			query: {
-				query,
-				dirs: type === 'directory' ? 'true' : type === 'file' ? 'false' : undefined
-			}
+			query,
+			dirs: type === 'directory' ? 'true' : type === 'file' ? 'false' : undefined
 		});
 
 		return result.data || [];
@@ -360,9 +456,7 @@ class OpencodeService extends Disposable implements IOpencodeService {
 			return [];
 		}
 
-		const result = await this._client.find.text({
-			query: { pattern }
-		});
+		const result = await this._client.find.text({ pattern });
 
 		return (result.data || []).map((match: any) => ({
 			path: match.path?.text || '',
@@ -370,15 +464,24 @@ class OpencodeService extends Disposable implements IOpencodeService {
 		}));
 	}
 
+	async fetchWeb(url: string): Promise<string> {
+		if (!this._client) {
+			throw new Error('Not connected to Opencode');
+		}
+		// This would use the webfetch tool via a session command
+		// For now, just return empty - this can be implemented later
+		return '';
+	}
+
 	async approvePermission(sessionId: string, permissionId: string, approved: boolean): Promise<void> {
 		if (!this._client) {
 			throw new Error('Not connected to Opencode');
 		}
 
-		await this._client.postSessionIdPermissionsPermissionId({
-			path: { id: sessionId, permissionID: permissionId },
-			body: { response: approved ? 'once' : 'reject' }
-		});
+		await this._client.postSessionIdPermissionsPermissionId(
+			{ id: sessionId, permissionID: permissionId },
+			{ response: approved ? 'once' : 'reject' }
+		);
 	}
 
 	async subscribeToEvents(sessionId: string): Promise<void> {
