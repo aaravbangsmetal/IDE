@@ -1116,7 +1116,7 @@ export class CodeApplication extends Disposable {
 		services.set(IMetricsService, new SyncDescriptor(MetricsMainService, undefined, false));
 		services.set(IVoidUpdateService, new SyncDescriptor(VoidMainUpdateService, undefined, false));
 		services.set(IVoidSCMService, new SyncDescriptor(VoidSCMService, undefined, false));
-		services.set(IOpencodeMainService, new SyncDescriptor(OpencodeMainService, undefined, false));
+		services.set(IOpencodeMainService, new SyncDescriptor(OpencodeMainService, undefined, true)); // Eager instantiation to auto-start server
 
 		// NAP Integration Services (Auth must be first as others depend on it)
 		services.set(INapAuthService, new SyncDescriptor(NapAuthMainService, undefined, false));
@@ -1147,7 +1147,17 @@ export class CodeApplication extends Disposable {
 			workspacesManagementMainService.initialize()
 		]);
 
-		return this.mainInstantiationService.createChild(services);
+		const instantiationService = this.mainInstantiationService.createChild(services);
+
+		// Auto-start Opencode server (access service to trigger instantiation)
+		try {
+			const opencodeService = instantiationService.createInstance(IOpencodeMainService);
+			// Service constructor will auto-start the server
+		} catch (err) {
+			this.logService.error('[Opencode] Failed to initialize:', err);
+		}
+
+		return instantiationService;
 	}
 
 	private initChannels(accessor: ServicesAccessor, mainProcessElectronServer: ElectronIPCServer, sharedProcessClient: Promise<MessagePortClient>): void {

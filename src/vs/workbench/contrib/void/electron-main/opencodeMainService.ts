@@ -27,10 +27,15 @@ export class OpencodeMainService extends Disposable implements IOpencodeMainServ
 
 	constructor() {
 		super();
-		// Auto-start server when service is created
-		this.startServer().catch(err => {
-			console.error('[Opencode] Failed to auto-start server:', err);
-		});
+		// Auto-start server when service is created (don't block)
+		// Use setTimeout to avoid blocking service registration
+		setTimeout(() => {
+			this.startServer().catch(err => {
+				console.error('[Opencode] Failed to auto-start server:', err);
+				// Log to stderr so it appears in main process logs
+				process.stderr.write(`[Opencode] Failed to auto-start server: ${err instanceof Error ? err.message : String(err)}\n`);
+			});
+		}, 500); // Small delay to let app initialize
 	}
 
 	async startServer(): Promise<{ url: string; port: number }> {
@@ -42,10 +47,14 @@ export class OpencodeMainService extends Disposable implements IOpencodeMainServ
 			// Find opencode command
 			const opencodePath = this._findOpencodeCommand();
 			if (!opencodePath) {
-				throw new Error('Opencode command not found. Please install it: npm install -g @opencode-ai/cli');
+				const errorMsg = 'Opencode command not found. Please install it: npm install -g @opencode-ai/cli';
+				console.error(`[Opencode] ${errorMsg}`);
+				process.stderr.write(`[Opencode] ${errorMsg}\n`);
+				throw new Error(errorMsg);
 			}
 
-			console.log('[Opencode] Starting server...');
+			console.log(`[Opencode] Starting server with: ${opencodePath}`);
+			process.stdout.write(`[Opencode] Starting server with: ${opencodePath}\n`);
 
 			// Start the server
 			this._serverProcess = spawn(opencodePath, ['serve', '--hostname', '127.0.0.1', '--port', String(this._serverPort)], {
