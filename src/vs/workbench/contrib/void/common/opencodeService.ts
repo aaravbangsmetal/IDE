@@ -10,18 +10,19 @@ import { registerSingleton, InstantiationType } from '../../../../platform/insta
 import type { OpencodeSessionInfo, OpencodeEvent, OpencodeConfig, OpencodeToolCall, OpencodePermission } from './opencodeServiceTypes.js';
 
 // Simple HTTP client for Opencode API (using fetch directly since SDK is ES modules)
+// Note: The raw API returns responses directly without a "data" wrapper
 interface OpencodeHTTPClient {
 	global: {
-		health(): Promise<{ data: { healthy: boolean; version?: string } }>;
+		health(): Promise<{ healthy: boolean; version?: string }>;
 	};
 	session: {
-		list(): Promise<{ data: OpencodeSessionInfo[] }>;
-		create(body: { title?: string }): Promise<{ data: { id: string; title?: string; createdAt?: number; updatedAt?: number } }>;
-		get(path: { id: string }): Promise<{ data: OpencodeSessionInfo }>;
-		delete(path: { id: string }): Promise<{ data: boolean }>;
+		list(): Promise<OpencodeSessionInfo[]>;
+		create(body: { title?: string }): Promise<{ id: string; title?: string; createdAt?: number; updatedAt?: number }>;
+		get(path: { id: string }): Promise<OpencodeSessionInfo>;
+		delete(path: { id: string }): Promise<boolean>;
 		prompt(path: { id: string }, body: { parts: Array<{ type: string; text: string }>; noReply?: boolean }): Promise<any>;
 		command(path: { id: string }, body: { command: string; arguments: string }): Promise<any>;
-		shell(path: { id: string }, body: { command: string; agent: string }): Promise<{ data?: { parts?: Array<{ type: string; text?: string }> } }>;
+		shell(path: { id: string }, body: { command: string; agent: string }): Promise<{ parts?: Array<{ type: string; text?: string }> }>;
 		messages(path: { id: string }): Promise<any>;
 	};
 	postSessionIdPermissionsPermissionId(path: { id: string; permissionID: string }, body: { response: 'once' | 'always' | 'reject' }): Promise<any>;
@@ -29,11 +30,11 @@ interface OpencodeHTTPClient {
 		subscribe(): Promise<{ stream: AsyncIterable<OpencodeEvent> }>;
 	};
 	file: {
-		read(query: { path: string }): Promise<{ data?: { type: string; content: string } }>;
+		read(query: { path: string }): Promise<{ type: string; content: string } | null>;
 	};
 	find: {
-		files(query: { query: string; dirs?: string }): Promise<{ data: string[] }>;
-		text(query: { pattern: string }): Promise<{ data: Array<{ path: { text: string }; line_number: number }> }>;
+		files(query: { query: string; dirs?: string }): Promise<string[]>;
+		text(query: { pattern: string }): Promise<Array<{ path: { text: string }; line_number: number }>>;
 	};
 }
 
@@ -293,11 +294,12 @@ class OpencodeService extends Disposable implements IOpencodeService {
 				// Test connection
 				console.log('[Opencode] Testing connection...');
 				const health = await this._client.global.health();
-				if (health.data?.healthy) {
+				console.log('[Opencode] Health response:', JSON.stringify(health));
+				if (health?.healthy) {
 					this._isConnected = true;
 					await this.refreshSessions();
 					this._onDidConnect.fire();
-					console.log(`[Opencode] Connected successfully to ${serverUrl}`);
+					console.log(`[Opencode] Connected successfully to ${serverUrl}, version: ${health.version}`);
 					return;
 				} else {
 					throw new Error('Server health check returned unhealthy');
@@ -339,7 +341,7 @@ class OpencodeService extends Disposable implements IOpencodeService {
 		});
 
 		await this.refreshSessions();
-		return result.data.id;
+		return result.id;
 	}
 
 	async listSessions(): Promise<OpencodeSessionInfo[]> {
@@ -348,7 +350,9 @@ class OpencodeService extends Disposable implements IOpencodeService {
 		}
 
 		const sessions = await this._client.session.list();
-		return sessions.data.map((s: any) => ({
+		// API returns array directly, not wrapped in data
+		const sessionList = Array.isArray(sessions) ? sessions : [];
+		return sessionList.map((s: any) => ({
 			id: s.id,
 			title: s.title || 'Untitled',
 			createdAt: s.createdAt ? new Date(s.createdAt).getTime() : Date.now(),
@@ -363,11 +367,10 @@ class OpencodeService extends Disposable implements IOpencodeService {
 		}
 
 		try {
-			const result = await this._client.session.get({ id: sessionId });
-			if (!result.data) {
+			const session = await this._client.session.get({ id: sessionId });
+			if (!session) {
 				return undefined;
 			}
-			const session = result.data;
 			return {
 				id: session.id,
 				title: session.title || 'Untitled',
@@ -387,13 +390,13 @@ class OpencodeService extends Disposable implements IOpencodeService {
 
 		try {
 			const result = await this._client.session.delete({ id: sessionId });
-			if (result.data) {
+			if (result) {
 				await this.refreshSessions();
 				if (this._currentSessionId === sessionId) {
 					this.setCurrentSession(undefined);
 				}
 			}
-			return result.data || false;
+			return result || false;
 		} catch {
 			return false;
 		}
@@ -452,8 +455,8 @@ class OpencodeService extends Disposable implements IOpencodeService {
 		);
 
 		// Shell returns AssistantMessage, extract text from parts
-		if (result.data?.parts) {
-			const textPart = result.data.parts.find((p: any) => p.type === 'text');
+		if (result?.parts) {
+			const textPart = result.parts.find((p: any) => p.type === 'text');
 			return textPart?.text || '';
 		}
 		return '';
@@ -466,13 +469,13 @@ class OpencodeService extends Disposable implements IOpencodeService {
 
 		const result = await this._client.file.read({ path });
 
-		if (!result.data) {
+		if (!result) {
 			return '';
 		}
 
 		// FileContent has type "text" and content string
-		if (result.data.type === 'text') {
-			return result.data.content || '';
+		if (result.type === 'text') {
+			return result.content || '';
 		}
 		return '';
 	}
@@ -487,7 +490,7 @@ class OpencodeService extends Disposable implements IOpencodeService {
 			dirs: type === 'directory' ? 'true' : type === 'file' ? 'false' : undefined
 		});
 
-		return result.data || [];
+		return Array.isArray(result) ? result : [];
 	}
 
 	async searchText(pattern: string): Promise<Array<{ path: string; lines: number[] }>> {
@@ -496,8 +499,9 @@ class OpencodeService extends Disposable implements IOpencodeService {
 		}
 
 		const result = await this._client.find.text({ pattern });
+		const matches = Array.isArray(result) ? result : [];
 
-		return (result.data || []).map((match: any) => ({
+		return matches.map((match: any) => ({
 			path: match.path?.text || '',
 			lines: [match.line_number || 0]
 		}));

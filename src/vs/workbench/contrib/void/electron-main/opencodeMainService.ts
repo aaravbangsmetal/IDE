@@ -5,9 +5,11 @@
 
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
-import { spawn, ChildProcess } from 'child_process';
+import { spawn, ChildProcess, execSync } from 'child_process';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import * as http from 'http';
+import * as url from 'url';
 
 export const IOpencodeMainService = createDecorator<IOpencodeMainService>('opencodeMainService');
 
@@ -138,7 +140,6 @@ export class OpencodeMainService extends Disposable implements IOpencodeMainServ
 
 	private async _killExistingServer(): Promise<void> {
 		try {
-			const { execSync } = require('child_process');
 			// Kill any existing opencode process on the port
 			execSync(`lsof -ti :${this._serverPort} | xargs kill -9 2>/dev/null || true`, { encoding: 'utf-8' });
 			// Also kill any opencode serve/web processes
@@ -164,15 +165,14 @@ export class OpencodeMainService extends Disposable implements IOpencodeMainServ
 			'/opt/homebrew/bin/opencode',
 		];
 
-		for (const path of possiblePaths) {
-			if (existsSync(path)) {
-				return path;
+		for (const p of possiblePaths) {
+			if (existsSync(p)) {
+				return p;
 			}
 		}
 
 		// Try to find in PATH
 		try {
-			const { execSync } = require('child_process');
 			const whichResult = execSync('which opencode', { encoding: 'utf-8' }).trim();
 			if (whichResult && existsSync(whichResult)) {
 				return whichResult;
@@ -184,12 +184,11 @@ export class OpencodeMainService extends Disposable implements IOpencodeMainServ
 		return undefined;
 	}
 
-	private async _checkServerHealth(url: string): Promise<boolean> {
+	private async _checkServerHealth(serverUrl: string): Promise<boolean> {
 		try {
-			const http = require('http');
 			// API endpoint is /global/health for opencode serve
 			return new Promise((resolve) => {
-				const req = http.get(`${url}/global/health`, { timeout: 3000 }, (res: any) => {
+				const req = http.get(`${serverUrl}/global/health`, { timeout: 3000 }, (res) => {
 					let data = '';
 					res.on('data', (chunk: Buffer) => {
 						data += chunk.toString();
@@ -227,13 +226,12 @@ export class OpencodeMainService extends Disposable implements IOpencodeMainServ
 		}
 	}
 
-	async proxyRequest(method: string, path: string, body?: any): Promise<any> {
-		const url = this._serverUrl || `http://127.0.0.1:${this._serverPort}`;
-		const fullUrl = `${url}${path}`;
+	async proxyRequest(method: string, requestPath: string, body?: any): Promise<any> {
+		const serverUrl = this._serverUrl || `http://127.0.0.1:${this._serverPort}`;
+		const fullUrl = `${serverUrl}${requestPath}`;
 
 		return new Promise((resolve, reject) => {
-			const http = require('http');
-			const urlObj = require('url').parse(fullUrl);
+			const urlObj = url.parse(fullUrl);
 
 			const options = {
 				hostname: urlObj.hostname,
@@ -245,7 +243,7 @@ export class OpencodeMainService extends Disposable implements IOpencodeMainServ
 				}
 			};
 
-			const req = http.request(options, (res: any) => {
+			const req = http.request(options, (res) => {
 				let data = '';
 				res.on('data', (chunk: Buffer) => {
 					data += chunk.toString();
