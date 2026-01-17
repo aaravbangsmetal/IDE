@@ -161,8 +161,8 @@ class OpencodeService extends Disposable implements IOpencodeService {
 				get: (path) => apiCall('GET', `/session/${path.id}`),
 				// API endpoint: DELETE /session/:id
 				delete: (path) => apiCall('DELETE', `/session/${path.id}`),
-				// API endpoint: POST /session/:id/prompt
-				prompt: (path, body) => apiCall('POST', `/session/${path.id}/prompt`, body),
+				// API endpoint: POST /session/:id/message (not /prompt - that's the SDK abstraction)
+				prompt: (path, body) => apiCall('POST', `/session/${path.id}/message`, body),
 				// API endpoint: POST /session/:id/command
 				command: (path, body) => apiCall('POST', `/session/${path.id}/command`, body),
 				// API endpoint: POST /session/:id/shell
