@@ -131,7 +131,7 @@ class OpencodeService extends Disposable implements IOpencodeService {
 					console.log('[Opencode] Loading SDK module...');
 					this._sdkClientModule = await importAMDNodeModule<OpencodeSDKClient>('@opencode-ai/sdk', 'dist/client.js');
 					console.log('[Opencode] SDK module loaded successfully');
-					
+
 					// Verify the module has the expected exports
 					if (!this._sdkClientModule || typeof this._sdkClientModule.createOpencodeClient !== 'function') {
 						throw new Error('SDK module loaded but createOpencodeClient is not available');
@@ -166,12 +166,12 @@ class OpencodeService extends Disposable implements IOpencodeService {
 			} catch (err) {
 				console.error('[Opencode] Connection error:', err);
 				const errorMessage = err instanceof Error ? err.message : String(err);
-				
+
 				// Check if it's a network error (server not running)
 				if (errorMessage.includes('fetch') || errorMessage.includes('network') || errorMessage.includes('ECONNREFUSED') || errorMessage.includes('Failed to fetch')) {
 					throw new Error(`Cannot connect to Opencode server at ${serverUrl}. The server is not running. Please start it with: opencode serve`);
 				}
-				
+
 				throw new Error(`Failed to connect to Opencode server at ${serverUrl}: ${errorMessage}. Make sure the Opencode server is running. Start it with: opencode serve`);
 			}
 		} catch (error) {
