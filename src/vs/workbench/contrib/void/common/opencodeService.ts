@@ -97,6 +97,10 @@ class OpencodeService extends Disposable implements IOpencodeService {
 	private readonly _onDidPermissionRequest = this._register(new Emitter<OpencodePermission>());
 	readonly onDidPermissionRequest = this._onDidPermissionRequest.event;
 
+	constructor() {
+		super();
+	}
+
 	get isConnected(): boolean {
 		return this._isConnected && !!this._client;
 	}
@@ -219,7 +223,11 @@ class OpencodeService extends Disposable implements IOpencodeService {
 		}
 
 		try {
-			const session = await this._client.session.get({ path: { id: sessionId } });
+			const result = await this._client.session.get({ path: { id: sessionId } });
+			if (!result.data) {
+				return undefined;
+			}
+			const session = result.data;
 			return {
 				id: session.id,
 				title: session.title || 'Untitled',
@@ -245,7 +253,7 @@ class OpencodeService extends Disposable implements IOpencodeService {
 					this.setCurrentSession(undefined);
 				}
 			}
-			return result.data;
+			return result.data || false;
 		} catch {
 			return false;
 		}
@@ -289,7 +297,7 @@ class OpencodeService extends Disposable implements IOpencodeService {
 
 		await this._client.session.command({
 			path: { id: sessionId },
-			body: { command }
+			body: { command, arguments: '' }
 		});
 	}
 
@@ -300,10 +308,15 @@ class OpencodeService extends Disposable implements IOpencodeService {
 
 		const result = await this._client.session.shell({
 			path: { id: sessionId },
-			body: { command }
+			body: { command, agent: 'default' }
 		});
 
-		return result.data.content?.[0]?.text || '';
+		// Shell returns AssistantMessage, extract text from parts
+		if (result.data?.parts) {
+			const textPart = result.data.parts.find((p: any) => p.type === 'text');
+			return textPart?.text || '';
+		}
+		return '';
 	}
 
 	async readFile(path: string): Promise<string> {
@@ -315,7 +328,15 @@ class OpencodeService extends Disposable implements IOpencodeService {
 			query: { path }
 		});
 
-		return result.data.content || '';
+		if (!result.data) {
+			return '';
+		}
+
+		// FileContent has type "text" and content string
+		if (result.data.type === 'text') {
+			return result.data.content || '';
+		}
+		return '';
 	}
 
 	async searchFiles(query: string, type?: 'file' | 'directory'): Promise<string[]> {
@@ -324,10 +345,13 @@ class OpencodeService extends Disposable implements IOpencodeService {
 		}
 
 		const result = await this._client.find.files({
-			query: { query, type }
+			query: {
+				query,
+				dirs: type === 'directory' ? 'true' : type === 'file' ? 'false' : undefined
+			}
 		});
 
-		return result.data;
+		return result.data || [];
 	}
 
 	async searchText(pattern: string): Promise<Array<{ path: string; lines: number[] }>> {
@@ -339,9 +363,9 @@ class OpencodeService extends Disposable implements IOpencodeService {
 			query: { pattern }
 		});
 
-		return result.data.map(match => ({
-			path: match.path,
-			lines: match.lines || []
+		return (result.data || []).map((match: any) => ({
+			path: match.path?.text || '',
+			lines: [match.line_number || 0]
 		}));
 	}
 
@@ -350,9 +374,9 @@ class OpencodeService extends Disposable implements IOpencodeService {
 			throw new Error('Not connected to Opencode');
 		}
 
-		await this._client.postSessionByIdPermissionsByPermissionId({
-			path: { id: sessionId, permissionId },
-			body: { approved }
+		await this._client.postSessionIdPermissionsPermissionId({
+			path: { id: sessionId, permissionID: permissionId },
+			body: { response: approved ? 'once' : 'reject' }
 		});
 	}
 
@@ -368,24 +392,30 @@ class OpencodeService extends Disposable implements IOpencodeService {
 			// Process events asynchronously
 			(async () => {
 				for await (const event of events.stream) {
+					const eventType = event.type as string;
+					const eventProps = (event as any).properties || {};
+
 					this._onDidReceiveEvent.fire({
-						type: event.type,
-						properties: event.properties || {}
+						type: eventType,
+						properties: eventProps
 					});
 
 					// Handle specific event types
-					if (event.type === 'tool.used') {
+					if (eventType === 'file.edited' || eventType === 'command.executed') {
+						// Tool was used (file edit or command execution)
 						this._onDidToolCall.fire({
-							name: event.properties?.tool || 'unknown',
-							params: event.properties?.params || {},
-							status: 'running'
+							name: eventType === 'file.edited' ? 'edit' : 'command',
+							params: eventProps,
+							status: 'completed'
 						});
-					} else if (event.type === 'permission.required') {
+					} else if (eventType === 'permission.updated' || eventType === 'permission.replied') {
+						// Permission event
+						const permission = eventProps.permission || {};
 						this._onDidPermissionRequest.fire({
-							id: event.properties?.id || '',
-							type: event.properties?.type || 'edits',
-							action: event.properties?.action || '',
-							approved: null
+							id: permission.id || permission.permissionID || '',
+							type: permission.type || 'edits',
+							action: permission.action || '',
+							approved: eventType === 'permission.replied' ? (eventProps.response === 'once' || eventProps.response === 'always') : null
 						});
 					}
 				}

@@ -44,7 +44,7 @@ import { RawMCPToolCall } from '../common/mcpServiceTypes.js';
 
 // related to retrying when LLM message has error
 const CHAT_RETRIES = 3
-const RETRY_DELAY = 2500
+// const RETRY_DELAY = 2500 // Not used with Opencode
 
 
 const findStagingSelectionIndex = (currentSelections: StagingSelectionItem[] | undefined, newSelection: StagingSelectionItem): number | null => {
@@ -316,7 +316,7 @@ class ChatThreadService extends Disposable implements IChatThreadService {
 	constructor(
 		@IStorageService private readonly _storageService: IStorageService,
 		@IVoidModelService private readonly _voidModelService: IVoidModelService,
-		@ILLMMessageService private readonly _llmMessageService: ILLMMessageService,
+		@ILLMMessageService private readonly _llmMessageService: ILLMMessageService, // Kept for fallback/compatibility
 		@IOpencodeService private readonly _opencodeService: IOpencodeService,
 		@IToolsService private readonly _toolsService: IToolsService,
 		@IVoidSettingsService private readonly _settingsService: IVoidSettingsService,
@@ -324,7 +324,7 @@ class ChatThreadService extends Disposable implements IChatThreadService {
 		@IMetricsService private readonly _metricsService: IMetricsService,
 		@IEditCodeService private readonly _editCodeService: IEditCodeService,
 		@INotificationService private readonly _notificationService: INotificationService,
-		@IConvertToLLMMessageService private readonly _convertToLLMMessagesService: IConvertToLLMMessageService,
+		@IConvertToLLMMessageService private readonly _convertToLLMMessagesService: IConvertToLLMMessageService, // Kept for fallback/compatibility
 		@IWorkspaceContextService private readonly _workspaceContextService: IWorkspaceContextService,
 		@IDirectoryStrService private readonly _directoryStringService: IDirectoryStrService,
 		@IFileService private readonly _fileService: IFileService,
@@ -815,8 +815,8 @@ class ChatThreadService extends Disposable implements IChatThreadService {
 			this._opencodeService.setCurrentSession(opencodeSessionId);
 		}
 
-		let interrupted = false;
-		const interruptor = Promise.resolve(() => { interrupted = true });
+		// const interrupted = false; // Not used in Opencode flow
+		const interruptor: Promise<() => void> = Promise.resolve(() => { /* interrupt handler */ });
 
 		// Get the latest user message to send to Opencode
 		const chatMessages = this.state.allThreads[threadId]?.messages ?? [];
@@ -843,7 +843,7 @@ class ChatThreadService extends Disposable implements IChatThreadService {
 		let fullText = '';
 		let fullReasoning = '';
 		let currentToolCall: RawToolCallObj | null = null;
-		let permissionRequest: { id: string; type: string; action: string } | null = null;
+		// let permissionRequest: { id: string; type: string; action: string } | null = null; // Tracked in stream state
 
 		const eventDisposable = this._opencodeService.onDidReceiveEvent(event => {
 			if (event.type === 'message.streaming' || event.type === 'message.part') {
@@ -869,9 +869,10 @@ class ChatThreadService extends Disposable implements IChatThreadService {
 
 				// Special handling for web search (webfetch tool)
 				let toolDisplayName = toolName;
+				let url = '';
 				if (toolName === 'webfetch' || toolName === 'web_fetch') {
 					toolDisplayName = 'Web Search';
-					const url = event.properties?.params?.url || event.properties?.params?.urls?.[0] || '';
+					url = event.properties?.params?.url || event.properties?.params?.urls?.[0] || '';
 					if (url) {
 						currentToolCall.rawParams = { ...currentToolCall.rawParams, url };
 					}
@@ -880,21 +881,21 @@ class ChatThreadService extends Disposable implements IChatThreadService {
 				this._setStreamState(threadId, {
 					isRunning: 'tool',
 					toolInfo: {
-						name: toolDisplayName,
-						params: currentToolCall.rawParams,
+						toolName: toolDisplayName as ToolName,
+						toolParams: currentToolCall.rawParams as ToolCallParams<ToolName>,
 						id: currentToolCall.id,
 						content: toolName === 'webfetch' ? `Searching web: ${url || '...'}` : 'Running...',
-						rawParams: currentToolCall.rawParams
+						rawParams: currentToolCall.rawParams,
+						mcpServerName: undefined // Opencode tools don't use MCP
 					},
 					interrupt: interruptor
 				});
 			} else if (event.type === 'permission.required') {
-				permissionRequest = {
-					id: event.properties?.id || '',
-					type: event.properties?.type || 'edits',
-					action: event.properties?.action || ''
-				};
-				this._setStreamState(threadId, { isRunning: 'awaiting_user', interrupt: interruptor });
+				// Permission request - stored in stream state, not local variable
+				this._setStreamState(threadId, {
+					isRunning: 'awaiting_user',
+					interrupt: undefined // No interrupt needed for permission requests
+				});
 			} else if (event.type === 'message.completed') {
 				// Message completed, extract final text
 				fullText = event.properties?.text || fullText;
