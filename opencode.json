@@ -1,0 +1,23 @@
+{
+  "tools": {
+    "webfetch": {
+      "enabled": true,
+      "requireApproval": false
+    },
+    "edit": {
+      "enabled": true,
+      "requireApproval": true
+    },
+    "write": {
+      "enabled": true,
+      "requireApproval": true
+    },
+    "bash": {
+      "enabled": true,
+      "requireApproval": true
+    }
+  },
+  "network": {
+    "allowed": true
+  }
+}

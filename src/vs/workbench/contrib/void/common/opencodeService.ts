@@ -8,6 +8,7 @@ import { Disposable } from '../../../../base/common/lifecycle.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 import { registerSingleton, InstantiationType } from '../../../../platform/instantiation/common/extensions.js';
 import { createOpencodeClient, type OpencodeClient } from '@opencode-ai/sdk/client';
+import { createOpencode } from '@opencode-ai/sdk';
 import type { OpencodeSessionInfo, OpencodeEvent, OpencodeConfig, OpencodeToolCall, OpencodePermission } from './opencodeServiceTypes.js';
 
 export const IOpencodeService = createDecorator<IOpencodeService>('opencodeService');
@@ -50,6 +51,9 @@ export interface IOpencodeService {
 	searchFiles(query: string, type?: 'file' | 'directory'): Promise<string[]>;
 	searchText(pattern: string): Promise<Array<{ path: string; lines: number[] }>>;
 
+	// Web operations
+	fetchWeb(url: string): Promise<string>;
+
 	// Permission handling
 	approvePermission(sessionId: string, permissionId: string, approved: boolean): Promise<void>;
 
@@ -61,6 +65,7 @@ class OpencodeService extends Disposable implements IOpencodeService {
 	declare readonly _serviceBrand: undefined;
 
 	private _client: OpencodeClient | undefined;
+	private _server: { url: string; close(): void } | undefined;
 	private _isConnected: boolean = false;
 	private _currentSessionId: string | undefined;
 	private _sessions: OpencodeSessionInfo[] = [];
@@ -114,20 +119,52 @@ class OpencodeService extends Disposable implements IOpencodeService {
 				this._config = { ...this._config, ...config };
 			}
 
-			// Create client (assumes server is already running)
-			this._client = createOpencodeClient({
-				baseUrl: this._config.baseUrl || `http://${this._config.hostname}:${this._config.port}`
-			});
+			// Try to connect to existing server first
+			try {
+				this._client = createOpencodeClient({
+					baseUrl: this._config.baseUrl || `http://${this._config.hostname}:${this._config.port}`
+				});
 
-			// Test connection
-			const health = await this._client.global.health();
-			if (!health.data.healthy) {
-				throw new Error('Opencode server is not healthy');
+				// Test connection
+				const health = await this._client.global.health();
+				if (health.data.healthy) {
+					this._isConnected = true;
+					await this.refreshSessions();
+					this._onDidConnect.fire();
+					return;
+				}
+			} catch (err) {
+				// Server not running, try to start it
+				console.log('Opencode server not found, attempting to start it...');
 			}
 
-			this._isConnected = true;
-			await this.refreshSessions();
-			this._onDidConnect.fire();
+			// Start server programmatically if not running
+			try {
+				const { client, server } = await createOpencode({
+					hostname: this._config.hostname,
+					port: this._config.port,
+					config: {
+						// Enable webfetch tool for web search
+						tools: {
+							webfetch: { enabled: true },
+							edit: { enabled: true },
+							write: { enabled: true },
+							bash: { enabled: true }
+						},
+						network: { allowed: true }
+					}
+				});
+
+				this._server = server;
+				this._client = client;
+				console.log(`Opencode server started at ${server.url}`);
+
+				this._isConnected = true;
+				await this.refreshSessions();
+				this._onDidConnect.fire();
+			} catch (startError) {
+				throw new Error(`Failed to start Opencode server: ${startError instanceof Error ? startError.message : String(startError)}. Make sure you have Opencode installed or start it manually.`);
+			}
 		} catch (error) {
 			this._isConnected = false;
 			throw new Error(`Failed to connect to Opencode: ${error instanceof Error ? error.message : String(error)}`);
@@ -138,6 +175,10 @@ class OpencodeService extends Disposable implements IOpencodeService {
 		if (this._eventStream) {
 			// Close event stream if needed
 			this._eventStream = undefined;
+		}
+		if (this._server) {
+			this._server.close();
+			this._server = undefined;
 		}
 		this._client = undefined;
 		this._isConnected = false;
@@ -223,11 +264,20 @@ class OpencodeService extends Disposable implements IOpencodeService {
 			throw new Error('Not connected to Opencode');
 		}
 
+		// Enhance prompt to explicitly mention web search capability if user asks about web
+		let enhancedPrompt = prompt;
+		const lowerPrompt = prompt.toLowerCase();
+		if ((lowerPrompt.includes('search the web') || lowerPrompt.includes('search web') || lowerPrompt.includes('look up') || lowerPrompt.includes('find information'))
+			&& !lowerPrompt.includes('webfetch') && !lowerPrompt.includes('use webfetch')) {
+			// Add hint that webfetch tool is available
+			enhancedPrompt = `${prompt}\n\nNote: You have access to the webfetch tool to search the web and fetch web pages. Use it when you need current information from the internet.`;
+		}
+
 		await this._client.session.prompt({
 			path: { id: sessionId },
 			body: {
 				noReply: options?.noReply ?? false,
-				parts: [{ type: 'text', text: prompt }]
+				parts: [{ type: 'text', text: enhancedPrompt }]
 			}
 		});
 	}

@@ -827,7 +827,17 @@ class ChatThreadService extends Disposable implements IChatThreadService {
 			return;
 		}
 
-		const userPrompt = lastUserMessage.content;
+		let userPrompt = lastUserMessage.content;
+
+		// Enhance prompt to explicitly enable web search if user asks about web
+		const lowerPrompt = userPrompt.toLowerCase();
+		if ((lowerPrompt.includes('search the web') || lowerPrompt.includes('search web') ||
+		     lowerPrompt.includes('look up') || lowerPrompt.includes('find information') ||
+		     lowerPrompt.includes('what happened') || lowerPrompt.includes('current events'))
+		    && !lowerPrompt.includes('webfetch')) {
+			// Explicitly tell the agent to use webfetch tool
+			userPrompt = `${userPrompt}\n\nIMPORTANT: You have access to the webfetch tool to search the web and fetch current information. Use the webfetch tool to search the internet for this information.`;
+		}
 
 		// Set up event handlers for real-time updates
 		let fullText = '';
@@ -847,21 +857,33 @@ class ChatThreadService extends Disposable implements IChatThreadService {
 					},
 					interrupt: interruptor
 				});
-			} else if (event.type === 'tool.used' || event.type === 'tool.call') {
+			} else if (event.type === 'tool.used' || event.type === 'tool.call' || event.type === 'tool.executed') {
+				const toolName = event.properties?.tool || event.properties?.name || 'unknown';
 				currentToolCall = {
-					name: event.properties?.tool || event.properties?.name || 'unknown',
+					name: toolName,
 					rawParams: event.properties?.params || {},
 					id: event.properties?.id || generateUuid(),
 					isDone: false,
 					doneParams: []
 				};
+
+				// Special handling for web search (webfetch tool)
+				let toolDisplayName = toolName;
+				if (toolName === 'webfetch' || toolName === 'web_fetch') {
+					toolDisplayName = 'Web Search';
+					const url = event.properties?.params?.url || event.properties?.params?.urls?.[0] || '';
+					if (url) {
+						currentToolCall.rawParams = { ...currentToolCall.rawParams, url };
+					}
+				}
+
 				this._setStreamState(threadId, {
 					isRunning: 'tool',
 					toolInfo: {
-						name: currentToolCall.name,
+						name: toolDisplayName,
 						params: currentToolCall.rawParams,
 						id: currentToolCall.id,
-						content: 'Running...',
+						content: toolName === 'webfetch' ? `Searching web: ${url || '...'}` : 'Running...',
 						rawParams: currentToolCall.rawParams
 					},
 					interrupt: interruptor
