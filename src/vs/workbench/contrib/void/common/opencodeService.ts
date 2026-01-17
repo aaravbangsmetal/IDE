@@ -11,7 +11,6 @@ import { importAMDNodeModule } from '../../../../amdX.js';
 import type { OpencodeSessionInfo, OpencodeEvent, OpencodeConfig, OpencodeToolCall, OpencodePermission } from './opencodeServiceTypes.js';
 
 // Dynamic import types for Opencode SDK
-type OpencodeSDK = typeof import('@opencode-ai/sdk');
 type OpencodeSDKClient = typeof import('@opencode-ai/sdk/client');
 
 export const IOpencodeService = createDecorator<IOpencodeService>('opencodeService');
@@ -68,9 +67,7 @@ class OpencodeService extends Disposable implements IOpencodeService {
 	declare readonly _serviceBrand: undefined;
 
 	private _client: any | undefined; // OpencodeClient loaded dynamically
-	private _server: { url: string; close(): void } | undefined;
 	private _sdkClientModule: OpencodeSDKClient | undefined;
-	private _sdkModule: OpencodeSDK | undefined;
 	private _isConnected: boolean = false;
 	private _currentSessionId: string | undefined;
 	private _sessions: OpencodeSessionInfo[] = [];
@@ -184,10 +181,6 @@ class OpencodeService extends Disposable implements IOpencodeService {
 		if (this._eventStream) {
 			// Close event stream if needed
 			this._eventStream = undefined;
-		}
-		if (this._server) {
-			this._server.close();
-			this._server = undefined;
 		}
 		this._client = undefined;
 		this._isConnected = false;
