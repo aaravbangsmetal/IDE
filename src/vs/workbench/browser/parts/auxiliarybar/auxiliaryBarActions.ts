@@ -3,14 +3,14 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Codicon } from '../../../../base/common/codicons.js';
+// import { Codicon } from '../../../../base/common/codicons.js'; // Commented out - icons not used
 import { localize, localize2 } from '../../../../nls.js';
-import { Action2, MenuId, MenuRegistry, registerAction2 } from '../../../../platform/actions/common/actions.js';
+import { Action2, MenuId, registerAction2 } from '../../../../platform/actions/common/actions.js';
 import { ContextKeyExpr } from '../../../../platform/contextkey/common/contextkey.js';
-import { registerIcon } from '../../../../platform/theme/common/iconRegistry.js';
+// import { registerIcon } from '../../../../platform/theme/common/iconRegistry.js'; // Commented out - icons not used
 import { Categories } from '../../../../platform/action/common/actionCommonCategories.js';
 import { AuxiliaryBarVisibleContext } from '../../../common/contextkeys.js';
-import { ViewContainerLocation, ViewContainerLocationToString } from '../../../common/views.js';
+import { ViewContainerLocation } from '../../../common/views.js';
 import { ActivityBarPosition, IWorkbenchLayoutService, LayoutSettings, Parts } from '../../../services/layout/browser/layoutService.js';
 import { IPaneCompositePartService } from '../../../services/panecomposite/browser/panecomposite.js';
 import { ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
@@ -19,10 +19,11 @@ import { KeyCode, KeyMod } from '../../../../base/common/keyCodes.js';
 import { SwitchCompositeViewAction } from '../compositeBarActions.js';
 import { closeIcon } from '../panel/panelActions.js';
 
-const auxiliaryBarRightIcon = registerIcon('auxiliarybar-right-layout-icon', Codicon.layoutSidebarRight, localize('toggleAuxiliaryIconRight', 'Icon to toggle the auxiliary bar off in its right position.'));
-const auxiliaryBarRightOffIcon = registerIcon('auxiliarybar-right-off-layout-icon', Codicon.layoutSidebarRightOff, localize('toggleAuxiliaryIconRightOn', 'Icon to toggle the auxiliary bar on in its right position.'));
-const auxiliaryBarLeftIcon = registerIcon('auxiliarybar-left-layout-icon', Codicon.layoutSidebarLeft, localize('toggleAuxiliaryIconLeft', 'Icon to toggle the auxiliary bar in its left position.'));
-const auxiliaryBarLeftOffIcon = registerIcon('auxiliarybar-left-off-layout-icon', Codicon.layoutSidebarLeftOff, localize('toggleAuxiliaryIconLeftOn', 'Icon to toggle the auxiliary bar on in its left position.'));
+// Icons commented out - not used since menu items were hidden
+// const auxiliaryBarRightIcon = registerIcon('auxiliarybar-right-layout-icon', Codicon.layoutSidebarRight, localize('toggleAuxiliaryIconRight', 'Icon to toggle the auxiliary bar off in its right position.'));
+// const auxiliaryBarRightOffIcon = registerIcon('auxiliarybar-right-off-layout-icon', Codicon.layoutSidebarRightOff, localize('toggleAuxiliaryIconRightOn', 'Icon to toggle the auxiliary bar on in its right position.'));
+// const auxiliaryBarLeftIcon = registerIcon('auxiliarybar-left-layout-icon', Codicon.layoutSidebarLeft, localize('toggleAuxiliaryIconLeft', 'Icon to toggle the auxiliary bar in its left position.'));
+// const auxiliaryBarLeftOffIcon = registerIcon('auxiliarybar-left-off-layout-icon', Codicon.layoutSidebarLeftOff, localize('toggleAuxiliaryIconLeftOn', 'Icon to toggle the auxiliary bar on in its left position.'));
 
 export class ToggleAuxiliaryBarAction extends Action2 {
 
@@ -121,46 +122,47 @@ registerAction2(class FocusAuxiliaryBarAction extends Action2 {
 	}
 });
 
-MenuRegistry.appendMenuItems([
-	{
-		id: MenuId.LayoutControlMenu,
-		item: {
-			group: '2_pane_toggles',
-			command: {
-				id: ToggleAuxiliaryBarAction.ID,
-				title: localize('toggleSecondarySideBar', "Toggle Void Side Bar"),
-				toggled: { condition: AuxiliaryBarVisibleContext, icon: auxiliaryBarLeftIcon },
-				icon: auxiliaryBarLeftOffIcon,
-			},
-			when: ContextKeyExpr.and(ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')), ContextKeyExpr.equals('config.workbench.sideBar.location', 'right')),
-			order: 0
-		}
-	}, {
-		id: MenuId.LayoutControlMenu,
-		item: {
-			group: '2_pane_toggles',
-			command: {
-				id: ToggleAuxiliaryBarAction.ID,
-				title: localize('toggleSecondarySideBar', "Toggle Void Side Bar"),
-				toggled: { condition: AuxiliaryBarVisibleContext, icon: auxiliaryBarRightIcon },
-				icon: auxiliaryBarRightOffIcon,
-			},
-			when: ContextKeyExpr.and(ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')), ContextKeyExpr.equals('config.workbench.sideBar.location', 'left')),
-			order: 2
-		}
-	}, {
-		id: MenuId.ViewContainerTitleContext,
-		item: {
-			group: '3_workbench_layout_move',
-			command: {
-				id: ToggleAuxiliaryBarAction.ID,
-				title: localize2('hideAuxiliaryBar', 'Hide Void Side Bar'),
-			},
-			when: ContextKeyExpr.and(AuxiliaryBarVisibleContext, ContextKeyExpr.equals('viewContainerLocation', ViewContainerLocationToString(ViewContainerLocation.AuxiliaryBar))),
-			order: 2
-		}
-	}
-]);
+// Commented out - hiding Toggle Void Side Bar from layout control menu
+// MenuRegistry.appendMenuItems([
+// 	{
+// 		id: MenuId.LayoutControlMenu,
+// 		item: {
+// 			group: '2_pane_toggles',
+// 			command: {
+// 				id: ToggleAuxiliaryBarAction.ID,
+// 				title: localize('toggleSecondarySideBar', "Toggle Void Side Bar"),
+// 				toggled: { condition: AuxiliaryBarVisibleContext, icon: auxiliaryBarLeftIcon },
+// 				icon: auxiliaryBarLeftOffIcon,
+// 			},
+// 			when: ContextKeyExpr.and(ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')), ContextKeyExpr.equals('config.workbench.sideBar.location', 'right')),
+// 			order: 0
+// 		}
+// 	}, {
+// 		id: MenuId.LayoutControlMenu,
+// 		item: {
+// 			group: '2_pane_toggles',
+// 			command: {
+// 				id: ToggleAuxiliaryBarAction.ID,
+// 				title: localize('toggleSecondarySideBar', "Toggle Void Side Bar"),
+// 				toggled: { condition: AuxiliaryBarVisibleContext, icon: auxiliaryBarRightIcon },
+// 				icon: auxiliaryBarRightOffIcon,
+// 			},
+// 			when: ContextKeyExpr.and(ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')), ContextKeyExpr.equals('config.workbench.sideBar.location', 'left')),
+// 			order: 2
+// 		}
+// 	}, {
+// 		id: MenuId.ViewContainerTitleContext,
+// 		item: {
+// 			group: '3_workbench_layout_move',
+// 			command: {
+// 				id: ToggleAuxiliaryBarAction.ID,
+// 				title: localize2('hideAuxiliaryBar', 'Hide Void Side Bar'),
+// 			},
+// 			when: ContextKeyExpr.and(AuxiliaryBarVisibleContext, ContextKeyExpr.equals('viewContainerLocation', ViewContainerLocationToString(ViewContainerLocation.AuxiliaryBar))),
+// 			order: 2
+// 		}
+// 	}
+// ]);
 
 registerAction2(class extends SwitchCompositeViewAction {
 	constructor() {

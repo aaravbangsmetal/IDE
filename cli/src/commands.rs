@@ -6,6 +6,7 @@
 mod context;
 
 pub mod args;
+pub mod codex;
 pub mod serve_web;
 pub mod tunnels;
 pub mod update;

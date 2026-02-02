@@ -167,14 +167,15 @@ export class ToggleSidebarPositionAction extends Action2 {
 
 registerAction2(ToggleSidebarPositionAction);
 
-const configureLayoutIcon = registerIcon('configure-layout-icon', Codicon.layout, localize('cofigureLayoutIcon', 'Icon represents workbench layout configuration.'));
-MenuRegistry.appendMenuItem(MenuId.LayoutControlMenu, {
-	submenu: MenuId.LayoutControlMenuSubmenu,
-	title: localize('configureLayout', "Configure Layout"),
-	icon: configureLayoutIcon,
-	group: '1_workbench_layout',
-	when: ContextKeyExpr.equals('config.workbench.layoutControl.type', 'menu')
-});
+// Removed configure layout icon (3-box icon) as requested
+// const configureLayoutIcon = registerIcon('configure-layout-icon', Codicon.layout, localize('cofigureLayoutIcon', 'Icon represents workbench layout configuration.'));
+// MenuRegistry.appendMenuItem(MenuId.LayoutControlMenu, {
+// 	submenu: MenuId.LayoutControlMenuSubmenu,
+// 	title: localize('configureLayout', "Configure Layout"),
+// 	icon: configureLayoutIcon,
+// 	group: '1_workbench_layout',
+// 	when: ContextKeyExpr.equals('config.workbench.layoutControl.type', 'menu')
+// });
 
 
 MenuRegistry.appendMenuItems([{
@@ -1416,6 +1417,31 @@ for (const { active } of [...ToggleVisibilityActions, ...MoveSideBarActions, ...
 	}
 }
 
+// Commented out - hiding Customize Layout from users
+// registerAction2(class CustomizeLayoutAction extends Action2 {
+
+// 	private _currentQuickPick?: IQuickPick<IQuickPickItem, { useSeparators: true }>;
+
+// 	constructor() {
+// 		super({
+// 			id: 'workbench.action.customizeLayout',
+// 			title: localize2('customizeLayout', "Customize Layout..."),
+// 			f1: true,
+// 			// Removed icon to hide the 3-box icon
+// 			menu: [
+// 				{
+// 					id: MenuId.LayoutControlMenuSubmenu,
+// 					group: 'z_end',
+// 				},
+// 				{
+// 					id: MenuId.LayoutControlMenu,
+// 					when: ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both'),
+// 					group: '1_layout'
+// 				}
+// 			]
+// 		});
+// 	}
+// CustomizeLayoutAction - hidden from users by setting f1: false and menu: []
 registerAction2(class CustomizeLayoutAction extends Action2 {
 
 	private _currentQuickPick?: IQuickPick<IQuickPickItem, { useSeparators: true }>;
@@ -1424,19 +1450,8 @@ registerAction2(class CustomizeLayoutAction extends Action2 {
 		super({
 			id: 'workbench.action.customizeLayout',
 			title: localize2('customizeLayout', "Customize Layout..."),
-			f1: true,
-			icon: configureLayoutIcon,
-			menu: [
-				{
-					id: MenuId.LayoutControlMenuSubmenu,
-					group: 'z_end',
-				},
-				{
-					id: MenuId.LayoutControlMenu,
-					when: ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both'),
-					group: '1_layout'
-				}
-			]
+			f1: false, // Hide from command palette
+			menu: [] // Hide from menus
 		});
 	}
 

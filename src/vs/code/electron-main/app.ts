@@ -133,6 +133,7 @@ import { LLMMessageChannel } from '../../workbench/contrib/void/electron-main/se
 import { VoidSCMService } from '../../workbench/contrib/void/electron-main/voidSCMMainService.js';
 import { IVoidSCMService } from '../../workbench/contrib/void/common/voidSCMTypes.js';
 import { MCPChannel } from '../../workbench/contrib/void/electron-main/mcpChannel.js';
+import { CodexChannel } from '../../workbench/contrib/void/electron-main/codexChannel.js';
 // NAP Integration Services
 import { INapAuthService } from '../../workbench/contrib/void/common/napAuthService.js';
 import { NapAuthMainService } from '../../workbench/contrib/void/electron-main/napAuthMainService.js';
@@ -1268,6 +1269,11 @@ export class CodeApplication extends Disposable {
 		// Void added this
 		const mcpChannel = new MCPChannel();
 		mainProcessElectronServer.registerChannel('void-channel-mcp', mcpChannel);
+
+		// Codex Integration Channel
+		const codexChannel = new CodexChannel(accessor.get(ILogService), accessor.get(IEnvironmentMainService));
+		mainProcessElectronServer.registerChannel('void-channel-codex', codexChannel);
+		disposables.add(codexChannel);
 
 		// NAP Integration Channels
 		const napAuthChannel = ProxyChannel.fromService(accessor.get(INapAuthService), disposables);
