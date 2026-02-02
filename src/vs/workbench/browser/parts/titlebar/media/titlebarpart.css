@@ -392,7 +392,7 @@
 
 .monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container .codicon {
 	color: inherit;
-	font-size: 14px !important; /* Slightly reduced from 16px */
+	font-size: 15px !important; /* Slightly reduced from 16px */
 }
 
 /* Add padding inside filled areas so they don't touch borders */
@@ -404,13 +404,22 @@
 
 /* Scale down the icon content to create space inside filled areas */
 .monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container .monaco-action-bar .action-item .action-label.codicon::before {
-	transform: scale(0.9) !important; /* Slight scale down to create padding effect */
+	transform: scaleX(1.2) scale(0.9) !important; /* Stretch horizontally by 20%, slight scale down for padding effect */
 	display: inline-block !important;
 	transform-origin: center;
 }
 
+/* Add stroke effect to layout icons to create inner gap from border */
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container .codicon-layout-sidebar-left::before,
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container .codicon-layout-sidebar-right::before,
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container .codicon-layout-panel::before {
+	-webkit-text-stroke: 1px var(--vscode-titleBar-activeBackground, var(--vscode-editor-background));
+	paint-order: stroke fill;
+}
+
 .monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container .monaco-action-bar .action-item {
 	display: flex;
+	margin-right: 3px !important; /* Increase gap between icons by ~15% */
 }
 
 .monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container .monaco-action-bar .badge {
