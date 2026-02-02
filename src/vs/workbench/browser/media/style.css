@@ -18,16 +18,29 @@
 	border: none !important;
 }
 
-/* Change list selection and hover backgrounds from blue to gray */
+/* Override CSS variables to ensure selected and hover match */
+.monaco-workbench {
+	--vscode-list-activeSelectionBackground: #2a2a2a !important;
+	--vscode-list-inactiveSelectionBackground: #2a2a2a !important;
+	--vscode-list-hoverBackground: #2a2a2a !important;
+}
+
+/* Change list selection and hover backgrounds from blue to gray - make them match */
 .monaco-workbench .monaco-list .monaco-list-row.focused,
 .monaco-workbench .monaco-list .monaco-list-row.selected,
 .monaco-workbench .monaco-list:not(.drop-target) .monaco-list-row.focused,
 .monaco-workbench .monaco-list:not(.drop-target) .monaco-list-row.selected {
-	background-color: #3a3a3a !important;
+	background-color: var(--vscode-list-hoverBackground) !important;
 }
 
 .monaco-workbench .monaco-list .monaco-list-row:hover:not(.selected):not(.focused) {
-	background-color: #2a2a2a !important;
+	background-color: var(--vscode-list-hoverBackground) !important;
+}
+
+/* Ensure selected items also use hover background when hovered */
+.monaco-workbench .monaco-list .monaco-list-row.selected:hover,
+.monaco-workbench .monaco-list .monaco-list-row.focused:hover {
+	background-color: var(--vscode-list-hoverBackground) !important;
 }
 
 /* Change blue secondary text in lists to light gray #E3E3E3 */

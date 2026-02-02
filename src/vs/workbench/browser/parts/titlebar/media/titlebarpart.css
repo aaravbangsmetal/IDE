@@ -392,6 +392,21 @@
 
 .monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container .codicon {
 	color: inherit;
+	font-size: 14px !important; /* Slightly reduced from 16px */
+}
+
+/* Add padding inside filled areas so they don't touch borders */
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container .monaco-action-bar .action-item .action-label.codicon {
+	position: relative;
+	padding: 2px !important; /* Add padding around the icon */
+	box-sizing: border-box;
+}
+
+/* Scale down the icon content to create space inside filled areas */
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container .monaco-action-bar .action-item .action-label.codicon::before {
+	transform: scale(0.9) !important; /* Slight scale down to create padding effect */
+	display: inline-block !important;
+	transform-origin: center;
 }
 
 .monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container .monaco-action-bar .action-item {

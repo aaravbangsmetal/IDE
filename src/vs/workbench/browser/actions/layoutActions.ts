@@ -167,14 +167,15 @@ export class ToggleSidebarPositionAction extends Action2 {
 
 registerAction2(ToggleSidebarPositionAction);
 
-const configureLayoutIcon = registerIcon('configure-layout-icon', Codicon.layout, localize('cofigureLayoutIcon', 'Icon represents workbench layout configuration.'));
-MenuRegistry.appendMenuItem(MenuId.LayoutControlMenu, {
-	submenu: MenuId.LayoutControlMenuSubmenu,
-	title: localize('configureLayout', "Configure Layout"),
-	icon: configureLayoutIcon,
-	group: '1_workbench_layout',
-	when: ContextKeyExpr.equals('config.workbench.layoutControl.type', 'menu')
-});
+// Removed configure layout icon (3-box icon) as requested
+// const configureLayoutIcon = registerIcon('configure-layout-icon', Codicon.layout, localize('cofigureLayoutIcon', 'Icon represents workbench layout configuration.'));
+// MenuRegistry.appendMenuItem(MenuId.LayoutControlMenu, {
+// 	submenu: MenuId.LayoutControlMenuSubmenu,
+// 	title: localize('configureLayout', "Configure Layout"),
+// 	icon: configureLayoutIcon,
+// 	group: '1_workbench_layout',
+// 	when: ContextKeyExpr.equals('config.workbench.layoutControl.type', 'menu')
+// });
 
 
 MenuRegistry.appendMenuItems([{
@@ -1425,7 +1426,7 @@ registerAction2(class CustomizeLayoutAction extends Action2 {
 			id: 'workbench.action.customizeLayout',
 			title: localize2('customizeLayout', "Customize Layout..."),
 			f1: true,
-			icon: configureLayoutIcon,
+			// Removed icon to hide the 3-box icon
 			menu: [
 				{
 					id: MenuId.LayoutControlMenuSubmenu,

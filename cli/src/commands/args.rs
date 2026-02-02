@@ -185,6 +185,10 @@ pub enum Commands {
 	/// Runs the control server on process stdin/stdout
 	#[clap(hide = true)]
 	CommandShell(CommandShellArgs),
+
+	/// Runs the Codex agent server on process stdin/stdout
+	#[clap(hide = true)]
+	Codex(CodexArgs),
 }
 
 #[derive(Args, Debug, Clone)]
@@ -238,6 +242,25 @@ pub struct CommandShellArgs {
 	/// Optional parent process id. If provided, the server will be stopped when the process of the given pid no longer exists
 	#[clap(long, hide = true)]
 	pub parent_process_id: Option<String>,
+}
+
+#[derive(Args, Debug, Clone)]
+pub struct CodexArgs {
+	/// Listen on a socket instead of stdin/stdout.
+	#[clap(long)]
+	pub on_socket: bool,
+	/// Listen on a host/port instead of stdin/stdout.
+	#[clap(long, num_args = 0..=2, default_missing_value = "0")]
+	pub on_port: Vec<u16>,
+	/// Listen on a host/port instead of stdin/stdout.
+	#[clap(long)]
+	pub on_host: Option<String>,
+	/// Optional parent process id. If provided, the server will be stopped when the process of the given pid no longer exists
+	#[clap(long, hide = true)]
+	pub parent_process_id: Option<String>,
+	/// Path to codex-rs workspace (for development)
+	#[clap(long, hide = true)]
+	pub codex_workspace: Option<String>,
 }
 
 #[derive(Args, Debug, Clone)]

@@ -193,15 +193,22 @@
 	margin-left: 4px;
 }
 
-/* Apply same colors to file explorer tree items */
+/* Apply same colors to file explorer tree items - match hover and selected */
 .monaco-workbench .part.sidebar .monaco-list-row:hover:not(.selected):not(.focused) {
-	background-color: #222222 !important;
+	background-color: #2a2a2a !important;
 	color: #cecece !important;
 }
 
 .monaco-workbench .part.sidebar .monaco-list-row.selected,
 .monaco-workbench .part.sidebar .monaco-list-row.focused {
-	background-color: #222222 !important;
+	background-color: #2a2a2a !important;
+	color: #cecece !important;
+}
+
+/* Ensure selected items use same background when hovered */
+.monaco-workbench .part.sidebar .monaco-list-row.selected:hover,
+.monaco-workbench .part.sidebar .monaco-list-row.focused:hover {
+	background-color: #2a2a2a !important;
 	color: #cecece !important;
 }
 
