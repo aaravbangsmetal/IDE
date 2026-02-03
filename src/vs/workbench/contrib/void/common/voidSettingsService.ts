@@ -12,8 +12,13 @@ import { createDecorator } from '../../../../platform/instantiation/common/insta
 import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
 import { IMetricsService } from './metricsService.js';
 import { defaultProviderSettings, getModelCapabilities, ModelOverrides } from './modelCapabilities.js';
+import { join, sep } from '../../../../base/common/path.js';
 import { VOID_SETTINGS_STORAGE_KEY } from './storageKeys.js';
 import { defaultSettingsOfProvider, FeatureName, ProviderName, ModelSelectionOfFeature, SettingsOfProvider, SettingName, providerNames, ModelSelection, modelSelectionsEqual, featureNames, VoidStatefulModelInfo, GlobalSettings, GlobalSettingName, defaultGlobalSettings, ModelSelectionOptions, OptionsOfModelSelection, ChatMode, OverridesOfModel, defaultOverridesOfModel, MCPUserStateOfName as MCPUserStateOfName, MCPUserState } from './voidSettingsTypes.js';
+import { IFileService } from '../../../../platform/files/common/files.js';
+import { INativeEnvironmentService } from '../../../../platform/environment/common/environment.js';
+import { URI } from '../../../../base/common/uri.js';
+import { VSBuffer } from '../../../../base/common/buffer.js';
 
 
 // name is the name in the dropdown
@@ -241,6 +246,8 @@ class VoidSettingsService extends Disposable implements IVoidSettingsService {
 		@IStorageService private readonly _storageService: IStorageService,
 		@IEncryptionService private readonly _encryptionService: IEncryptionService,
 		@IMetricsService private readonly _metricsService: IMetricsService,
+		@IFileService private readonly _fileService: IFileService,
+		@INativeEnvironmentService private readonly _environmentService: INativeEnvironmentService,
 		// could have used this, but it's clearer the way it is (+ slightly different eg StorageTarget.USER)
 		// @ISecretStorageService private readonly _secretStorageService: ISecretStorageService,
 	) {
@@ -289,7 +296,7 @@ class VoidSettingsService extends Disposable implements IVoidSettingsService {
 			}
 			// add disableSystemMessage feature
 			if (readS.globalSettings.disableSystemMessage === undefined) readS.globalSettings.disableSystemMessage = false;
-			
+
 			// add autoAcceptLLMChanges feature
 			if (readS.globalSettings.autoAcceptLLMChanges === undefined) readS.globalSettings.autoAcceptLLMChanges = false;
 		}
@@ -302,9 +309,6 @@ class VoidSettingsService extends Disposable implements IVoidSettingsService {
 			readS = {
 				...defaultState(),
 				...readS,
-				// no idea why this was here, seems like a bug
-				// ...defaultSettingsOfProvider,
-				// ...readS.settingsOfProvider,
 			}
 
 			for (const providerName of providerNames) {
@@ -336,6 +340,30 @@ class VoidSettingsService extends Disposable implements IVoidSettingsService {
 			readS = defaultState()
 		}
 
+		// read predefined keys from void_keys/keys.json
+		try {
+			const appRoot = this._environmentService.appRoot;
+			const keysPath = URI.file(join(appRoot, 'void_keys', 'keys.json'))
+
+			if (await this._fileService.exists(keysPath)) {
+				const keysContent = await this._fileService.readFile(keysPath)
+				const keys = JSON.parse(keysContent.value.toString())
+
+				for (const providerName of providerNames) {
+					const providerKeys = keys[providerName]
+					if (providerKeys && providerKeys.apiKey) {
+						readS.settingsOfProvider[providerName] = {
+							...readS.settingsOfProvider[providerName],
+							apiKey: providerKeys.apiKey,
+							_didFillInProviderSettings: true
+						} as any
+					}
+				}
+			}
+		} catch (e) {
+			console.error('Error reading predefined keys:', e)
+		}
+
 		this.state = readS
 		this.state = _stateWithMergedDefaultModels(this.state)
 		this.state = _validatedModelState(this.state);
@@ -345,6 +373,7 @@ class VoidSettingsService extends Disposable implements IVoidSettingsService {
 		this._onDidChangeState.fire();
 
 	}
+
 
 
 	private async _readState(): Promise<VoidSettingsState> {
