@@ -1,5 +1,5 @@
 {
-  "anthropic": { "apiKey": "" },
-  "openAI": { "apiKey": "" },
-  "gemini": { "apiKey": "" }
+  "deepseek": {
+    "apiKey": "sk-62468a585db7422ba95ab2150361b3f1"
+  }
 }
