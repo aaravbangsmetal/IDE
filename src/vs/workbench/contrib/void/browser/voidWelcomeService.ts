@@ -4,8 +4,9 @@
  *--------------------------------------------------------------------------------------*/
 
 import { IWorkbenchContribution, registerWorkbenchContribution2, WorkbenchPhase } from '../../../common/contributions.js';
-import { Disposable } from '../../../../../base/common/lifecycle.js';
+import { Disposable } from '../../../../base/common/lifecycle.js';
 import { mountVoidWelcome } from './react/out/void-welcome/index.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 
 class WelcomeContribution extends Disposable implements IWorkbenchContribution {
 
@@ -13,7 +14,9 @@ class WelcomeContribution extends Disposable implements IWorkbenchContribution {
 
 	private static _hasShown = false;
 
-	constructor() {
+	constructor(
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+	) {
 		super();
 		this._showWelcome();
 	}
@@ -27,7 +30,9 @@ class WelcomeContribution extends Disposable implements IWorkbenchContribution {
 		container.id = 'void-welcome-container';
 		document.body.appendChild(container);
 
-		mountVoidWelcome(container, {});
+		this.instantiationService.invokeFunction(accessor => {
+			mountVoidWelcome(container, accessor);
+		});
 	}
 }
 
