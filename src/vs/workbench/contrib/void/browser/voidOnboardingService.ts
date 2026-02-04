@@ -49,4 +49,5 @@ export class OnboardingContribution extends Disposable implements IWorkbenchCont
 }
 
 // Register the contribution to be initialized during the AfterRestored phase
-// registerWorkbenchContribution2(OnboardingContribution.ID, OnboardingContribution, WorkbenchPhase.AfterRestored);
+import { registerWorkbenchContribution2, WorkbenchPhase } from '../../../common/contributions.js';
+registerWorkbenchContribution2(OnboardingContribution.ID, OnboardingContribution, WorkbenchPhase.AfterRestored);

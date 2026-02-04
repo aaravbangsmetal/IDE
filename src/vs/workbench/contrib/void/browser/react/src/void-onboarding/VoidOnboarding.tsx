@@ -473,23 +473,23 @@ const VoidOnboardingContent = () => {
 	const accessor = useAccessor()
 	const voidSettingsService = accessor.get('IVoidSettingsService')
 	const voidMetricsService = accessor.get('IMetricsService')
+	const napAuthService = accessor.get('INapAuthService')
 
 	const voidSettingsState = useSettingsState()
 
 	const [pageIndex, setPageIndex] = useState(0)
+	const [isAuthenticating, setIsAuthenticating] = useState(false)
+	const [authError, setAuthError] = useState<string | null>(null)
 
 
-	// page 1 state
+	// page 2 state
 	const [wantToUseOption, setWantToUseOption] = useState<WantToUseOption>('smart')
 
-	// Replace the single selectedProviderName with four separate states
-	// page 2 state - each tab gets its own state
 	const [selectedIntelligentProvider, setSelectedIntelligentProvider] = useState<ProviderName>('anthropic');
 	const [selectedPrivateProvider, setSelectedPrivateProvider] = useState<ProviderName>('ollama');
 	const [selectedAffordableProvider, setSelectedAffordableProvider] = useState<ProviderName>('gemini');
 	const [selectedAllProvider, setSelectedAllProvider] = useState<ProviderName>('anthropic');
 
-	// Helper function to get the current selected provider based on active tab
 	const getSelectedProvider = (): ProviderName => {
 		switch (wantToUseOption) {
 			case 'smart': return selectedIntelligentProvider;
@@ -499,7 +499,6 @@ const VoidOnboardingContent = () => {
 		}
 	}
 
-	// Helper function to set the selected provider for the current tab
 	const setSelectedProvider = (provider: ProviderName) => {
 		switch (wantToUseOption) {
 			case 'smart': setSelectedIntelligentProvider(provider); break;
@@ -552,7 +551,6 @@ const VoidOnboardingContent = () => {
 	</div>
 
 
-	// cannot be md
 	const basicDescOfWantToUseOption: { [wantToUseOption in WantToUseOption]: string } = {
 		smart: "Models with the best performance on benchmarks.",
 		private: "Host on your computer or local network for full data privacy.",
@@ -560,7 +558,6 @@ const VoidOnboardingContent = () => {
 		all: "",
 	}
 
-	// can be md
 	const detailedDescOfWantToUseOption: { [wantToUseOption in WantToUseOption]: string } = {
 		smart: "Most intelligent and best for agent mode.",
 		private: "Private-hosted so your data never leaves your computer or network. [Email us](mailto:founders@voideditor.com) for help setting up at your company.",
@@ -568,7 +565,6 @@ const VoidOnboardingContent = () => {
 		all: "",
 	}
 
-	// Modified: initialize separate provider states on initial render instead of watching wantToUseOption changes
 	useEffect(() => {
 		if (selectedIntelligentProvider === undefined) {
 			setSelectedIntelligentProvider(providerNamesOfWantToUseOption['smart'][0]);
@@ -584,21 +580,37 @@ const VoidOnboardingContent = () => {
 		}
 	}, []);
 
-	// reset the page to page 0 if the user redos onboarding
 	useEffect(() => {
 		if (!voidSettingsState.globalSettings.isOnboardingComplete) {
 			setPageIndex(0)
 		}
 	}, [setPageIndex, voidSettingsState.globalSettings.isOnboardingComplete])
 
+	const handleLogin = async () => {
+		setIsAuthenticating(true);
+		setAuthError(null);
+		try {
+			const response = await napAuthService.login();
+			if (response.success) {
+				setPageIndex(2); // Move to providers setup
+			} else {
+				setAuthError(response.error || 'Login failed');
+			}
+		} catch (e) {
+			setAuthError(String(e));
+		} finally {
+			setIsAuthenticating(false);
+		}
+	};
+
 
 	const contentOfIdx: { [pageIndex: number]: React.ReactNode } = {
 		0: <OnboardingPageShell
 			content={
 				<div className='flex flex-col items-center gap-8'>
-					<div className="text-5xl font-light text-center">Welcome to Void</div>
+					<div className="text-6xl font-light text-center">Welcome to Nap IDE</div>
+					<div className="text-xl text-center opacity-70">The next generation editor designed for agents.</div>
 
-					{/* Slice of Void image */}
 					<div className='max-w-md w-full h-[30vh] mx-auto flex items-center justify-center'>
 						{!isLinux && <VoidIcon />}
 					</div>
@@ -610,20 +622,53 @@ const VoidOnboardingContent = () => {
 						<PrimaryActionButton
 							onClick={() => { setPageIndex(1) }}
 						>
-							Get Started
+							Continue
 						</PrimaryActionButton>
 					</FadeIn>
 
 				</div>
 			}
 		/>,
+		1: <OnboardingPageShell
+			content={
+				<div className='flex flex-col items-center gap-8'>
+					<div className="text-5xl font-light text-center">Authentication</div>
+					<div className="text-lg text-center opacity-80 max-w-md">
+						To use Nap IDE, please sign in to your account. This allows you to sync your settings and access agent features.
+					</div>
 
-		1: <OnboardingPageShell hasMaxWidth={false}
+					{authError && (
+						<div className="p-3 bg-rose-500/20 border border-rose-500/50 rounded-lg text-rose-200 text-sm">
+							{authError}
+						</div>
+					)}
+
+					<PrimaryActionButton
+						onClick={handleLogin}
+						disabled={isAuthenticating}
+						className={isAuthenticating ? 'opacity-50 cursor-not-allowed' : ''}
+					>
+						{isAuthenticating ? 'Redirecting...' : 'Sign in to Nap'}
+					</PrimaryActionButton>
+
+					<div className="text-xs opacity-50 text-center">
+						By signing in, you agree to our Terms of Service and Privacy Policy.
+					</div>
+				</div>
+			}
+			bottom={
+				<div className="max-w-[600px] w-full mx-auto flex flex-col items-end">
+					<PreviousButton onClick={() => setPageIndex(0)} />
+				</div>
+			}
+		/>,
+
+		2: <OnboardingPageShell hasMaxWidth={false}
 			content={
 				<AddProvidersPage pageIndex={pageIndex} setPageIndex={setPageIndex} />
 			}
 		/>,
-		2: <OnboardingPageShell
+		3: <OnboardingPageShell
 
 			content={
 				<div>
