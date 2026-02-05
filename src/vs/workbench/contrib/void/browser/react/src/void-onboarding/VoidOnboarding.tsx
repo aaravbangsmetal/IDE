@@ -13,12 +13,12 @@ import { ColorScheme } from '../../../../../../../platform/theme/common/theme.js
 import ErrorBoundary from '../sidebar-tsx/ErrorBoundary.js';
 import { isLinux } from '../../../../../../../base/common/platform.js';
 
-const OVERRIDE_VALUE = false
+const OVERRIDE_VALUE = true
 
 export const VoidOnboarding = () => {
 
 	const voidSettingsState = useSettingsState()
-	const isOnboardingComplete = voidSettingsState.globalSettings.isOnboardingComplete || OVERRIDE_VALUE
+	const isOnboardingComplete = voidSettingsState.globalSettings.isOnboardingComplete && !OVERRIDE_VALUE
 
 	const isDark = useIsDark()
 
@@ -650,6 +650,13 @@ const VoidOnboardingContent = () => {
 					>
 						{isAuthenticating ? 'Redirecting...' : 'Sign in to Nap'}
 					</PrimaryActionButton>
+
+					<button
+						onClick={() => setPageIndex(2)}
+						className="px-6 py-2 text-void-fg-3 opacity-70 hover:opacity-100 transition-opacity duration-200"
+					>
+						Sign in later
+					</button>
 
 					<div className="text-xs opacity-50 text-center">
 						By signing in, you agree to our Terms of Service and Privacy Policy.
