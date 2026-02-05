@@ -43,6 +43,7 @@ import { Action2, registerAction2 } from '../../../../platform/actions/common/ac
 import { ServicesAccessor } from '../../../../editor/browser/editorExtensions.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { IWorkbenchContribution, registerWorkbenchContribution2, WorkbenchPhase } from '../../../common/contributions.js';
+import { IWorkspaceContextService, WorkbenchState } from '../../../../platform/workspace/common/workspace.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
 
 // compare against search.contribution.ts and debug.contribution.ts, scm.contribution.ts (source control)
@@ -127,7 +128,7 @@ const container = viewContainerRegistry.registerViewContainer({
 const viewsRegistry = Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry);
 viewsRegistry.registerViews([{
 	id: VOID_VIEW_ID,
-	hideByDefault: false, // start open
+	hideByDefault: true, // start hidden
 	// containerIcon: voidViewIcon,
 	name: nls.localize2('voidChat', ''), // this says ... : CHAT
 	ctorDescriptor: new SyncDescriptor(SidebarViewPane),
@@ -166,8 +167,15 @@ export class SidebarStartContribution implements IWorkbenchContribution {
 	static readonly ID = 'workbench.contrib.startupVoidSidebar';
 	constructor(
 		@ICommandService private readonly commandService: ICommandService,
+		@IWorkspaceContextService private readonly workspaceContextService: IWorkspaceContextService,
 	) {
-		this.commandService.executeCommand(VOID_OPEN_SIDEBAR_ACTION_ID)
+		const open = () => {
+			if (this.workspaceContextService.getWorkbenchState() !== WorkbenchState.EMPTY) {
+				this.commandService.executeCommand(VOID_OPEN_SIDEBAR_ACTION_ID)
+			}
+		}
+		this.workspaceContextService.onDidChangeWorkbenchState(() => open())
+		open()
 	}
 }
 registerWorkbenchContribution2(SidebarStartContribution.ID, SidebarStartContribution, WorkbenchPhase.AfterRestored);
