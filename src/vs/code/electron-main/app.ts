@@ -637,6 +637,13 @@ export class CodeApplication extends Disposable {
 			}, 2500));
 		}, 2500));
 		eventuallyPhaseScheduler.schedule();
+
+		// [NAP] Force dock icon update in dev mode
+		if (isMacintosh && !this.environmentMainService.isBuilt) {
+			const iconPath = join(this.environmentMainService.appRoot, 'resources/darwin/code.icns');
+			this.logService.trace(`[Nap] Setting dock icon from: ${iconPath}`);
+			app.dock.setIcon(iconPath);
+		}
 	}
 
 	private async setupProtocolUrlHandlers(accessor: ServicesAccessor, mainProcessElectronServer: ElectronIPCServer): Promise<IInitialProtocolUrls | undefined> {
