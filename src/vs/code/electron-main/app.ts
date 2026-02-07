@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { app, protocol, session, Session, systemPreferences, WebFrameMain } from 'electron';
+import { app, protocol, session, Session, systemPreferences, WebFrameMain, nativeImage } from 'electron';
 import { addUNCHostToAllowlist, disableUNCAccessRestrictions } from '../../base/node/unc.js';
 import { validatedIpcMain } from '../../base/parts/ipc/electron-main/ipcMain.js';
 import { hostname, release } from 'os';
@@ -176,6 +176,23 @@ export class CodeApplication extends Disposable {
 
 		this.configureSession();
 		this.registerListeners();
+
+		// [NAP] Force dock icon update in dev mode
+		if (isMacintosh && !this.environmentMainService.isBuilt) {
+			const iconPath = join(this.environmentMainService.appRoot, 'resources/linux/code.png'); // Use PNG for better compatibility
+			process.stdout.write(`[Nap] Constructor: Setting dock icon from: ${iconPath}\n`);
+			try {
+				const img = nativeImage.createFromPath(iconPath);
+				if (img.isEmpty()) {
+					process.stderr.write(`[Nap] Constructor: Icon image is empty at ${iconPath}\n`);
+				} else {
+					app.dock.setIcon(img);
+					process.stdout.write(`[Nap] Constructor: Dock icon set successfully with PNG\n`);
+				}
+			} catch (e) {
+				process.stderr.write(`[Nap] Constructor: Failed to set dock icon: ${e}\n`);
+			}
+		}
 	}
 
 	private configureSession(): void {
@@ -638,12 +655,7 @@ export class CodeApplication extends Disposable {
 		}, 2500));
 		eventuallyPhaseScheduler.schedule();
 
-		// [NAP] Force dock icon update in dev mode
-		if (isMacintosh && !this.environmentMainService.isBuilt) {
-			const iconPath = join(this.environmentMainService.appRoot, 'resources/darwin/code.icns');
-			this.logService.trace(`[Nap] Setting dock icon from: ${iconPath}`);
-			app.dock.setIcon(iconPath);
-		}
+
 	}
 
 	private async setupProtocolUrlHandlers(accessor: ServicesAccessor, mainProcessElectronServer: ElectronIPCServer): Promise<IInitialProtocolUrls | undefined> {

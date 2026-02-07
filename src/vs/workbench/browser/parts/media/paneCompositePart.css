@@ -31,15 +31,17 @@
 }
 
 .monaco-workbench .pane-composite-part:not(.empty) > .header {
-	border-bottom: none; /* Remove horizontal line between toolbar and content */
+	border-bottom: none;
+	/* Remove horizontal line between toolbar and content */
 }
 
 .monaco-workbench .sidebar.pane-composite-part:not(.empty) > .header {
-	border-bottom: none; /* Remove horizontal line for sidebar specifically */
+	border-bottom: none;
+	/* Remove horizontal line for sidebar specifically */
 }
 
 .monaco-workbench .pane-composite-part:not(.empty) > .footer {
-	border-top: 1px solid var(--vscode-sideBarActivityBarTop-border);
+	border-left: 1px solid var(--vscode-sideBarActivityBarTop-border);
 }
 
 /* Hide footer in auxiliarybar */
@@ -55,7 +57,8 @@
 }
 
 .monaco-workbench .sidebar.pane-composite-part > .header-or-footer > .composite-bar-container {
-	justify-content: center; /* Center the toolbar items for sidebar */
+	justify-content: center;
+	/* Center the toolbar items for sidebar */
 }
 
 .monaco-workbench .pane-composite-part > .header-or-footer .composite-bar-container {
@@ -63,7 +66,8 @@
 }
 
 .monaco-workbench .sidebar.pane-composite-part > .header-or-footer > .composite-bar-container {
-	justify-content: center; /* Center the toolbar items for sidebar */
+	justify-content: center;
+	/* Center the toolbar items for sidebar */
 }
 
 .monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-label.codicon-more,
@@ -81,7 +85,8 @@
 
 .monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar,
 .monaco-workbench .pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar {
-	line-height: 27px; /* matches panel titles in settings */
+	line-height: 27px;
+	/* matches panel titles in settings */
 }
 
 .monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item,
@@ -90,15 +95,17 @@
 	padding-left: 10px;
 	padding-right: 10px;
 	font-size: 11px;
-	padding-bottom: 2px; /* puts the bottom border down */
-	padding-top: 2px;
+	padding-bottom: 2px;
+	/* puts the bottom border down */
+	padding-top: 14px;
 	display: flex;
 }
 
 /* Style text labels in composite bar (EXPLORER, SOURCE CONTROL, SEARCH, etc.) */
 .monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:not(.icon),
 .monaco-workbench .pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:not(.icon) {
-	padding-left: 6px !important; /* Shift left by reducing padding from 10px to 6px */
+	padding-left: 6px !important;
+	/* Shift left by reducing padding from 10px to 6px */
 }
 
 .monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:not(.icon) .action-label,
@@ -111,12 +118,14 @@
 
 /* Hide ALL text labels for sidebar - show only icons - BUT KEEP OVERFLOW BUTTON */
 .monaco-workbench .sidebar.pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:not(.icon):not([aria-label*="Additional"]):not([aria-label*="Views"]) {
-	display: none !important; /* Hide non-icon items completely */
+	display: none !important;
+	/* Hide non-icon items completely */
 }
 
 /* Hide text content - make it invisible */
 .monaco-workbench .sidebar.pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.icon .action-label:not(.codicon) {
-	display: none !important; /* Hide any non-codicon labels */
+	display: none !important;
+	/* Hide any non-codicon labels */
 }
 
 /* Hide text that might be rendered as content - but NOT the overflow dropdown button */
@@ -173,22 +182,26 @@
 	overflow: visible !important;
 }
 
-.monaco-workbench .pane-composite-part > .title > .composite-bar-container >.composite-bar > .monaco-action-bar .action-item.icon,
-.monaco-workbench .pane-composite-part > .header-or-footer > .composite-bar-container >.composite-bar > .monaco-action-bar .action-item.icon {
-	height: 35px; /* matches height of composite container */
+.monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.icon,
+.monaco-workbench .pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.icon {
+	height: 35px;
+	/* matches height of composite container */
 	padding: 0 3px;
 }
 
 /* Increase gap between sidebar icons */
 .monaco-workbench .sidebar.pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.icon {
-	margin: 0 6px; /* Increased gap between icons */
+	margin: 0 6px;
+	/* Increased gap between icons */
 }
 
 
 .monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.icon .action-label:not(.codicon),
 .monaco-workbench .pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.icon .action-label:not(.codicon) {
-	width: 15px; /* Increased by 20% from 13px */
-	height: 15px; /* Increased by 20% from 13px */
+	width: 15px;
+	/* Increased by 20% from 13px */
+	height: 15px;
+	/* Increased by 20% from 13px */
 }
 
 .monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item::before,
@@ -253,12 +266,12 @@
 .monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.right + .action-item::before,
 .monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.left::before,
 .monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:last-of-type.right::after,
-.monaco-workbench .pane-composite-part > .title > .composite-bar-container.dragged-over-head  > .composite-bar > .monaco-action-bar .action-item:first-of-type::before,
+.monaco-workbench .pane-composite-part > .title > .composite-bar-container.dragged-over-head > .composite-bar > .monaco-action-bar .action-item:first-of-type::before,
 .monaco-workbench .pane-composite-part > .title > .composite-bar-container.dragged-over-tail > .composite-bar > .monaco-action-bar .action-item:last-of-type::after,
 .monaco-workbench .pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.right + .action-item::before,
 .monaco-workbench .pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.left::before,
 .monaco-workbench .pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:last-of-type.right::after,
-.monaco-workbench .pane-composite-part > .header-or-footer > .composite-bar-container.dragged-over-head  > .composite-bar > .monaco-action-bar .action-item:first-of-type::before,
+.monaco-workbench .pane-composite-part > .header-or-footer > .composite-bar-container.dragged-over-head > .composite-bar > .monaco-action-bar .action-item:first-of-type::before,
 .monaco-workbench .pane-composite-part > .header-or-footer > .composite-bar-container.dragged-over-tail > .composite-bar > .monaco-action-bar .action-item:last-of-type::after {
 	opacity: 1;
 }
@@ -384,9 +397,10 @@
 	width: calc(100% - 4px);
 }
 
-.monaco-workbench .pane-composite-part > .title > .composite-bar-container >.composite-bar > .monaco-action-bar .action-item.icon.checked,
-.monaco-workbench .pane-composite-part > .header-or-footer > .composite-bar-container >.composite-bar > .monaco-action-bar .action-item.icon.checked {
-	background-color: var(--vscode-activityBarTop-activeBackground);
+.monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.icon.checked,
+.monaco-workbench .pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.icon.checked {
+	background-color: rgba(255, 255, 255, 0.08) !important;
+	border-radius: 8px;
 }
 
 .monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.checked .active-item-indicator:before,
@@ -401,11 +415,13 @@
 	height: 0;
 	border-top-width: 1px;
 	border-top-style: solid;
+	display: none !important;
 }
 
 .monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.clicked:not(.checked):focus .active-item-indicator:before,
 .monaco-workbench .pane-composite-part > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.clicked:not(.checked):focus .active-item-indicator:before {
-	border-top-color: transparent !important; /* hides border on clicked state */
+	border-top-color: transparent !important;
+	/* hides border on clicked state */
 }
 
 .monaco-workbench .pane-composite-part > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:focus .active-item-indicator:before,
