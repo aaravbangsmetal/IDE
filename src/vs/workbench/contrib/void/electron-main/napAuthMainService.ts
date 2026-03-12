@@ -158,13 +158,29 @@ export class NapAuthMainService extends Disposable implements INapAuthService {
 				return;
 			}
 
-			// Update auth state
+			// Update auth state initially
 			this._authState = {
 				isAuthenticated: true,
 				accessToken: token,
 				refreshToken: refreshToken || undefined,
 				tokenExpiry: Date.now() + (60 * 60 * 1000) // Default 1 hour expiry
 			};
+
+			// Fetch user info to confirm account
+			try {
+				const userResponse = await fetch(`${this._apiUrl}/api/auth/me`, {
+					headers: {
+						'Authorization': `Bearer ${token}`
+					}
+				});
+				if (userResponse.ok) {
+					const userData = await userResponse.json();
+					this._authState.user = userData.user;
+					this._authState.plan = userData.plan;
+				}
+			} catch (error) {
+				this._logService.warn('[NapAuthMainService] Failed to fetch user info:', error);
+			}
 
 			await this._saveAuthState();
 			this._closeAuthWindow();
