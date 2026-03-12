@@ -1,26 +1,10 @@
 # Welcome to Nap Editor.
 
-<div align="center">
-	<img
-		src="./src/vs/workbench/browser/parts/editor/media/slice_of_void.png"
-	 	alt="Void Welcome"
-		width="300"
-	 	height="300"
-	/>
-</div>
-
 Nap Editor is the open-source AI-powered IDE.
 
 Use AI agents on your codebase, checkpoint and visualize changes, and bring any model or host locally. Nap Editor sends messages directly to providers without retaining your data.
 
 This repo contains the full sourcecode for Nap Editor. If you're new, welcome!
-
-- 🧭 [Website](https://voideditor.com)
-
-- 👋 [Discord](https://discord.gg/RSNjgaugJs)
-
-- 🚙 [Project Board](https://github.com/orgs/voideditor/projects/2)
-
 
 ## Contributing
 
